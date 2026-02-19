@@ -15,6 +15,7 @@ This repository contains the source code for both the frontend web application a
 -   **Backend**: Node.js, Express
 -   **Database**: PostgreSQL
 -   **ORM**: Prisma
+-   **Tasklets**: [@wendelmax/tasklets](https://www.npmjs.com/package/@wendelmax/tasklets) — Worker Threads for CPU-bound tasks (tax calc, GitHub analysis)
 -   **Containerization**: Docker
 
 ## 📋 Prerequisites
@@ -75,6 +76,36 @@ npm run dev
 -   `npm run dev`: Starts the development environment for all workspaces.
 -   `npm run build`: Builds the production application for all workspaces.
 -   `npm run lint`: Runs linting checks across the project.
+
+## 🚀 Production
+
+### Deploy with Docker Compose
+
+```bash
+docker-compose up -d postgres mailpit   # infra
+cd apps/api && npx prisma migrate deploy && npx prisma db seed
+docker-compose up -d api
+```
+
+### Deploy with PM2
+
+```bash
+npm run build --workspace=apps/web
+pm2 start ecosystem.config.cjs
+```
+
+### Production env (API)
+
+-   `NODE_ENV=production`
+-   `DATABASE_URL` (required)
+-   `JWT_SECRET` (min 32 chars)
+-   `FRONTEND_URL` / `CORS_ORIGIN`
+-   See `apps/api/env-template`
+
+### Health endpoints
+
+-   `GET /health` — API + DB status
+-   `GET /ready` — readiness probe (DB connectivity)
 
 ## 🤝 Contributing
 

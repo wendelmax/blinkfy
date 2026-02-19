@@ -32,4 +32,3 @@ Um dos maiores medos de empresas internacionais é o vazamento de segredos comer
 
 > [!CAUTION]
 > **Vazamento de Dados:** Em caso de qualquer incidente de segurança, a plataforma possui um Plano de Resposta a Incidentes que cumpre o prazo de notificação de 72 horas exigido pela GDPR.
-筋

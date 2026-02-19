@@ -13,6 +13,36 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d newone"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: newone-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: always
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: newone-api
+    environment:
+      DATABASE_URL: postgresql://admin:password@postgres:5432/newone
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-chars}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
 
 volumes:
   postgres_data:

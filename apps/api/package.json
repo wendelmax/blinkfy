@@ -1,7 +1,7 @@
 {
   "name": "api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Recruitment platform API",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -9,21 +9,25 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node prisma/seed.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^7.3.0",
+    "@prisma/client": "^5.22.0",
+    "@wendelmax/tasklets": "^2.2.0",
     "bcryptjs": "^3.0.3",
+    "compression": "^1.7.4",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
     "express-validator": "^7.3.1",
+    "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^8.0.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "prisma": "^7.3.0"
+    "prisma": "^5.22.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

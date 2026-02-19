@@ -1,3 +1,18 @@
+# API
 PORT=3001
-DATABASE_URL=
-JWT_SECRET=development_secret
+NODE_ENV=production
+DATABASE_URL=postgresql://user:pass@host:5432/db
+JWT_SECRET=your-secret-min-32-chars-for-production
+JWT_EXPIRES=7d
+FRONTEND_URL=https://your-frontend.com
+CORS_ORIGIN=https://your-frontend.com
+
+# SMTP
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_FROM=NewOne <noreply@yourdomain.com>
+
+# Optional
+EXCHANGE_RATE=5.5
+GITHUB_TOKEN=
+TASKLETS_MAX_WORKERS=auto

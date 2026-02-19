@@ -26,6 +26,8 @@ A plataforma atua como uma ponte inteligente entre:
 
 ## 📂 Estrutura da Documentação
 
+- **`docs/recruitment-system-full-spec.md`:** Especificação completa do fluxo (recrutamento → seleção → assinatura → gestão de candidatos), com segurança e valor para empresas e candidatos.
+- **`docs/journeys-and-interactions.md`:** Jornadas e interações de todos os atores (candidato, recrutador, empresa), APIs reais e infra para versão de lançamento (sem mocks).
 - `docs/business-context.md`: Detalhamento do modelo de negócio e nuances.
 - `docs/collaboration-methods.md`: Fluxos de trabalho e colaboração entre os envolvidos.
 - `docs/modules/recruitment-selection.md`: Fluxo de ATS e sourcing.
