@@ -85,6 +85,44 @@ exports.apply = async (req, res) => {
     }
 };
 
+exports.getApplications = async (req, res) => {
+    try {
+        const company = await prisma.company.findUnique({ where: { userId: req.user.id } });
+        if (!company) return res.status(403).json({ message: 'Company profile required' });
+
+        const applications = await prisma.application.findMany({
+            where: { job: { companyId: company.id } },
+            include: {
+                job: { select: { title: true, id: true } },
+                candidate: {
+                    select: { fullName: true },
+                    include: {
+                        candidateProfile: {
+                            select: { primaryStack: true, eScore: true },
+                        },
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+        });
+
+        res.json(applications.map((a) => ({
+            id: a.id,
+            jobId: a.jobId,
+            jobTitle: a.job.title,
+            candidateName: a.candidate.fullName,
+            role: a.candidate.candidateProfile?.primaryStack || 'Developer',
+            eScore: a.eScoreAtApply ?? a.candidate.candidateProfile?.eScore ?? 0,
+            stage: a.status,
+            createdAt: a.createdAt.toISOString(),
+        })));
+    } catch (err) {
+        console.error('getApplications error:', err);
+        res.status(500).json({ message: 'Failed to load applications' });
+    }
+};
+
 function formatPostedAt(date) {
     const d = new Date(date);
     const diff = Date.now() - d.getTime();

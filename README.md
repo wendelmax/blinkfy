@@ -1,112 +1,140 @@
 # Recruitment Platform
 
-Welcome to the Recruitment Platform monorepo! This project is a modern recruitment solution built with a powerful tech stack to ensure scalability and performance.
+Plataforma de recrutamento e seleção de desenvolvedores para empresas do exterior. Conecta talentos globais a oportunidades internacionais, com suporte a compliance, pagamentos e avaliação técnica automatizada.
 
-## 🚀 Overview
+## Overview
 
-This repository contains the source code for both the frontend web application and the backend API service.
+Monorepo que concentra frontend, backend e pacotes compartilhados em um único repositório.
 
--   **Frontend (`apps/web`)**: A responsive and dynamic user interface built with [Next.js](https://nextjs.org/).
--   **Backend (`apps/api`)**: A robust RESTful API built with [Express](https://expressjs.com/).
+| App | Stack | Porta |
+|-----|-------|------|
+| **Web** (`apps/web`) | Next.js 16, React 19, Tailwind CSS | 3000 |
+| **API** (`apps/api`) | Express 5, Prisma | 3001 |
 
-## 🛠 Tech Stack
+## Tech Stack
 
--   **Frontend**: Next.js, React, Tailwind CSS
--   **Backend**: Node.js, Express
--   **Database**: PostgreSQL
--   **ORM**: Prisma
--   **Tasklets**: [@wendelmax/tasklets](https://www.npmjs.com/package/@wendelmax/tasklets) — Worker Threads for CPU-bound tasks (tax calc, GitHub analysis)
--   **Containerization**: Docker
+- **Frontend:** Next.js, React 19, Tailwind CSS 4, TypeScript
+- **Backend:** Node.js, Express 5
+- **Database:** PostgreSQL + Prisma ORM
+- **Shared:** `@recruitment-platform/shared` — tipos e constantes compartilhados
+- **Workers:** [@wendelmax/tasklets](https://www.npmjs.com/package/@wendelmax/tasklets) — cálculos de impostos, análise GitHub
+- **Infra:** Docker Compose, PM2
 
-## 📋 Prerequisites
+## Pré-requisitos
 
-Before you begin, ensure you have the following installed:
+- [Node.js](https://nodejs.org/) 18+
+- [Docker](https://www.docker.com/) e Docker Compose
 
--   [Node.js](https://nodejs.org/) (v18 or higher)
--   [Docker](https://www.docker.com/) & Docker Compose
-
-## 🏁 Getting Started
-
-Follow these steps to get the project up and running on your local machine.
-
-### 1. Install Dependencies
-
-Install all project dependencies from the root directory:
+## Quick Start
 
 ```bash
+# 1. Instalar dependências (monorepo com workspaces)
 npm install
-```
 
-### 2. Set Up Environment Variables
+# 2. Subir PostgreSQL e Mailpit
+docker-compose up -d postgres mailpit
 
-Create `.env` files in `apps/web` and `apps/api` based on the `.env.example` files (if available), or configure them according to your local setup.
+# 3. Configurar banco e seed
+cd apps/api && npx prisma migrate dev && npx prisma db seed && cd ../..
 
-### 3. Start Database
-
-Launch the PostgreSQL database using Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
-### 4. Run Development Server
-
-Start both the frontend and backend development servers concurrently:
-
-```bash
+# 4. Rodar API e Web
 npm run dev
 ```
 
--   **Frontend**: http://localhost:3000
--   **Backend**: http://localhost:3001 (or configured port)
+- **Web:** http://localhost:3000  
+- **API:** http://localhost:3001  
+- **Mailpit (emails):** http://localhost:8025
 
-## 📂 Project Structure
+## Variáveis de Ambiente
+
+### API (`apps/api`)
+
+Copie `apps/api/env-template` para `apps/api/.env`:
+
+| Variável | Obrigatório | Descrição |
+|----------|-------------|-----------|
+| `DATABASE_URL` | ✓ | Connection string PostgreSQL |
+| `JWT_SECRET` | ✓ | Mínimo 32 caracteres em produção |
+| `FRONTEND_URL` | ✓ | URL do frontend (CORS, emails) |
+| `PORT` | | Porta (padrão: 3001) |
+| `SMTP_*` | | SMTP para envio de emails |
+| `GITHUB_TOKEN` | | API GitHub (análise de repositórios) |
+
+### Web (`apps/web`)
+
+| Variável | Descrição |
+|----------|-----------|
+| `NEXT_PUBLIC_API_URL` | URL da API (padrão: `http://localhost:3001/api`) |
+
+## Estrutura do Projeto
 
 ```
-.
-├── apps
-│   ├── web          # Next.js frontend application
-│   └── api          # Express backend application
-├── docker-compose.yml # Docker configuration for services
-└── package.json     # Root package.json managing workspaces
+├── apps/
+│   ├── api/          # Express REST API
+│   │   ├── prisma/   # Schema e migrations
+│   │   ├── src/
+│   │   └── env-template
+│   └── web/          # Next.js frontend
+│       └── app/      # App Router
+├── packages/
+│   └── shared/       # Tipos, constantes e API_ROUTES
+├── docs/             # Documentação
+├── docker-compose.yml
+├── ecosystem.config.cjs  # PM2
+└── package.json      # Workspaces
 ```
 
-## 📜 Scripts
+## Scripts
 
--   `npm run dev`: Starts the development environment for all workspaces.
--   `npm run build`: Builds the production application for all workspaces.
--   `npm run lint`: Runs linting checks across the project.
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | API + Web em modo desenvolvimento |
+| `npm run build` | Build de todos os workspaces |
+| `npm run start` | Inicia apps em produção |
+| `npm run lint` | Lint em todos os workspaces |
 
-## 🚀 Production
+Scripts por workspace:
 
-### Deploy with Docker Compose
+- **API:** `npm run dev --workspace=apps/api`, `npm run seed --workspace=apps/api`
+- **Web:** `npm run dev --workspace=apps/web`
+
+## Produção
+
+### Docker Compose
 
 ```bash
-docker-compose up -d postgres mailpit   # infra
+# Infra (postgres + mailpit)
+docker-compose up -d postgres mailpit
+
+# Migrations e seed
 cd apps/api && npx prisma migrate deploy && npx prisma db seed
+
+# Subir API
 docker-compose up -d api
 ```
 
-### Deploy with PM2
+O frontend pode ser hospedado em Vercel, Netlify ou servido via PM2.
+
+### PM2
 
 ```bash
-npm run build --workspace=apps/web
+npm run build
 pm2 start ecosystem.config.cjs
 ```
 
-### Production env (API)
+### Health Checks
 
--   `NODE_ENV=production`
--   `DATABASE_URL` (required)
--   `JWT_SECRET` (min 32 chars)
--   `FRONTEND_URL` / `CORS_ORIGIN`
--   See `apps/api/env-template`
+| Endpoint | Uso |
+|----------|-----|
+| `GET /health` | Status da API e do banco |
+| `GET /ready` | Readiness probe (Kubernetes, etc.) |
 
-### Health endpoints
+## Documentação
 
--   `GET /health` — API + DB status
--   `GET /ready` — readiness probe (DB connectivity)
+- [`docs/README.md`](docs/README.md) — Índice da documentação
+- [`docs/recruitment-system-full-spec.md`](docs/recruitment-system-full-spec.md) — Especificação do fluxo de recrutamento
+- [`docs/journeys-and-interactions.md`](docs/journeys-and-interactions.md) — Jornadas de usuários
 
-## 🤝 Contributing
+## Contribuindo
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contribuições são bem-vindas. Abra uma issue ou PR.

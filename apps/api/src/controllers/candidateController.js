@@ -52,6 +52,56 @@ exports.syncProfile = async (req, res) => {
     }
 };
 
+exports.getProfile = async (req, res) => {
+    try {
+        const profile = await prisma.candidateProfile.findUnique({
+            where: { userId: req.user.id },
+            include: { user: { select: { fullName: true, email: true } } },
+        });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+        const out = { ...profile, fullName: profile.user?.fullName, email: profile.user?.email };
+        delete out.user;
+        res.json(out);
+    } catch (err) {
+        console.error('getProfile error:', err);
+        res.status(500).json({ message: 'Failed to load profile' });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const profile = await prisma.candidateProfile.findUnique({
+            where: { userId: req.user.id },
+        });
+        if (!profile) return res.status(404).json({ message: 'Profile not found' });
+
+        const allowed = ['githubUsername', 'linkedinUrl', 'primaryStack', 'experienceLevel', 'englishLevel', 'salaryExpectationUsd', 'taxResidence', 'taxId', 'cityState'];
+        const data = {};
+        for (const k of allowed) {
+            if (req.body[k] !== undefined) data[k] = req.body[k] === '' ? null : req.body[k];
+        }
+        if (req.body.salaryExpectationUsd !== undefined) data.salaryExpectationUsd = req.body.salaryExpectationUsd ? parseInt(req.body.salaryExpectationUsd, 10) : null;
+
+        await prisma.candidateProfile.update({
+            where: { userId: req.user.id },
+            data,
+        });
+        if (req.body.fullName !== undefined && req.body.fullName.trim()) {
+            await prisma.user.update({
+                where: { id: req.user.id },
+                data: { fullName: req.body.fullName.trim() },
+            });
+        }
+        const updated = await prisma.candidateProfile.findUnique({
+            where: { userId: req.user.id },
+        });
+        res.json(updated);
+    } catch (err) {
+        console.error('updateProfile error:', err);
+        res.status(500).json({ message: 'Failed to update profile' });
+    }
+};
+
 exports.interviewAssessment = async (req, res) => {
     try {
         const userId = req.user.id;

@@ -45,6 +45,7 @@ app.use('/api/candidate', candidateRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/job', require('./routes/job'));
 app.use('/api/metadata', require('./routes/metadata'));
+app.use('/api/company', require('./routes/company'));
 
 app.get('/health', async (req, res) => {
     let dbStatus = 'unknown';

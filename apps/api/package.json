@@ -10,6 +10,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@recruitment-platform/shared": "*",
     "@prisma/client": "^5.22.0",
     "@wendelmax/tasklets": "^2.2.0",
     "bcryptjs": "^3.0.3",
