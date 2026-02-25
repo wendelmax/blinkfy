@@ -12,14 +12,15 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id            String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  fullName      String
-  userType      UserType
-  emailVerified Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String?  // null when using Keycloak
+  keycloakId     String?  @unique
+  fullName       String
+  userType       UserType
+  emailVerified  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   candidateProfile   CandidateProfile?
   company            Company?

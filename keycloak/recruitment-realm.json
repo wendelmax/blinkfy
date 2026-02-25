@@ -1,0 +1,98 @@
+{
+  "id": "recruitment",
+  "realm": "recruitment",
+  "displayName": "Recruitment Platform",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "verifyEmail": true,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "sslRequired": "external",
+  "defaultSignatureAlgorithm": "RS256",
+  "revokeRefreshToken": false,
+  "refreshTokenMaxReuse": 0,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "defaultRoles": ["candidate"],
+  "roles": {
+    "realm": [
+      { "name": "candidate", "description": "Developer candidate" },
+      { "name": "recruiter", "description": "Recruiter / Agency" },
+      { "name": "company", "description": "Hiring company" },
+      { "name": "admin", "description": "Platform administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "recruitment-web",
+      "name": "Recruitment Web",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "/auth/callback",
+        "/auth/callback/*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost/*##http://127.0.0.1/*##/"
+      }
+    },
+    {
+      "clientId": "recruitment-api",
+      "name": "Recruitment API",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "secret": "recruitment-api-secret-change-in-production"
+    }
+  ],
+  "clientScopes": [],
+  "defaultDefaultClientScopes": ["role_list", "profile", "email"],
+  "defaultOptionalClientScopes": ["address", "phone", "offline_access"],
+  "browserFlow": "browser",
+  "registrationFlow": "registration",
+  "directGrantFlow": "direct grant",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients",
+  "requiredCredentials": ["password"],
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "users": [
+    {
+      "username": "platform-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "email": "platform-admin@recruitment.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["admin"]
+    }
+  ]
+}

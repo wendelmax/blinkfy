@@ -171,6 +171,9 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        if (!user.passwordHash) {
+            return res.status(401).json({ message: 'This account uses single sign-on. Please sign in with the provider.' });
+        }
         const valid = await verifyPassword(password, user.passwordHash);
         if (!valid) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -216,6 +219,125 @@ exports.getMe = async (req, res) => {
     } catch (err) {
         console.error('GetMe error:', err);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * POST /api/auth/keycloak-callback
+ * Body: { code, redirectUri, userType: 'candidate'|'recruiter'|'company' }
+ * Exchanges Keycloak auth code for tokens, creates/finds User, returns our JWT
+ */
+exports.keycloakCallback = async (req, res) => {
+    try {
+        const { code, redirectUri, userType } = req.body;
+        if (!code || !redirectUri) {
+            return res.status(400).json({ message: 'code and redirectUri are required' });
+        }
+
+        const kcUrl = process.env.KEYCLOAK_URL || 'http://keycloak:8080';
+        const realm = process.env.KEYCLOAK_REALM || 'recruitment';
+        const clientId = process.env.KEYCLOAK_CLIENT_ID || 'recruitment-web';
+        const tokenUrl = `${kcUrl}/realms/${realm}/protocol/openid-connect/token`;
+
+        const params = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: redirectUri,
+            client_id: clientId,
+        });
+
+        const tokenRes = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString(),
+        });
+
+        if (!tokenRes.ok) {
+            const err = await tokenRes.text();
+            console.error('Keycloak token error:', err);
+            return res.status(400).json({ message: 'Invalid or expired authorization code' });
+        }
+
+        const tokens = await tokenRes.json();
+        const accessToken = tokens.access_token;
+
+        const userInfoUrl = `${kcUrl}/realms/${realm}/protocol/openid-connect/userinfo`;
+        const userInfoRes = await fetch(userInfoUrl, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!userInfoRes.ok) {
+            return res.status(400).json({ message: 'Failed to get user info' });
+        }
+        const kcUser = await userInfoRes.json();
+        const keycloakId = kcUser.sub;
+        const email = (kcUser.email || '').trim().toLowerCase();
+        const fullName = (kcUser.name || kcUser.preferred_username || email || 'User').trim();
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required from identity provider' });
+        }
+
+        const resolvedType = ['candidate', 'recruiter', 'company'].includes(userType)
+            ? userType
+            : (kcUser.realm_access?.roles?.includes('recruiter') ? 'recruiter'
+                : kcUser.realm_access?.roles?.includes('company') ? 'company'
+                : 'candidate');
+
+        let user = await prisma.user.findFirst({
+            where: { OR: [{ keycloakId }, { email }] },
+            include: { candidateProfile: true, company: true },
+        });
+
+        if (!user) {
+            user = await prisma.$transaction(async (tx) => {
+                const u = await tx.user.create({
+                    data: {
+                        email,
+                        fullName,
+                        userType: resolvedType,
+                        keycloakId,
+                        emailVerified: !!kcUser.email_verified,
+                    },
+                });
+                if (resolvedType === 'candidate') {
+                    await tx.candidateProfile.create({ data: { userId: u.id } });
+                }
+                if (resolvedType === 'recruiter' || resolvedType === 'company') {
+                    await tx.company.create({
+                        data: {
+                            userId: u.id,
+                            name: fullName,
+                            companyType: resolvedType === 'recruiter' ? 'agency' : 'company',
+                        },
+                    });
+                }
+                return tx.user.findUnique({
+                    where: { id: u.id },
+                    include: { candidateProfile: true, company: true },
+                });
+            });
+        } else if (!user.keycloakId) {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { keycloakId },
+            });
+        }
+
+        const payload = {
+            id: user.id,
+            email: user.email,
+            name: user.fullName,
+            type: user.userType,
+        };
+        const jwtToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+
+        res.json({
+            token: jwtToken,
+            user: sanitizeUser(user),
+        });
+    } catch (err) {
+        console.error('Keycloak callback error:', err);
+        res.status(500).json({ message: 'Authentication failed' });
     }
 };
 

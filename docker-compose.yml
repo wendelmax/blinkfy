@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: newone-db
+    container_name: recruitment-db
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/02-keycloak.sql
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d newone"]
@@ -21,27 +22,83 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    container_name: newone-mailpit
+    container_name: recruitment-mailpit
     ports:
       - "1025:1025"
       - "8025:8025"
     restart: always
 
+  keycloak:
+    # Keycloak Admin: admin / admin (change in production)
+    image: quay.io/keycloak/keycloak:25
+    container_name: recruitment-keycloak
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: admin
+      KC_DB_PASSWORD: password
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_SMTP_HOST: mailpit
+      KC_SMTP_PORT: 1025
+      KC_SMTP_FROM: noreply@recruitment.local
+      KC_SMTP_FROM_DISPLAY_NAME: Recruitment Platform
+    volumes:
+      - ./keycloak/recruitment-realm.json:/opt/keycloak/data/import/recruitment-realm.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
-    container_name: newone-api
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: recruitment-api
     environment:
       DATABASE_URL: postgresql://admin:password@postgres:5432/newone
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-32-chars}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-    ports:
-      - "3001:3001"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: recruitment
+      KEYCLOAK_CLIENT_ID: recruitment-web
     depends_on:
       postgres:
         condition: service_healthy
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: recruitment-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost/api
+      NEXT_PUBLIC_KEYCLOAK_URL: http://localhost/auth
+      NEXT_PUBLIC_KEYCLOAK_REALM: recruitment
+      NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: recruitment-web
+    depends_on:
+      - api
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: recruitment-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+      - api
+      - keycloak
     restart: always
 
 volumes:

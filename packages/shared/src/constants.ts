@@ -10,6 +10,7 @@ export const API_ROUTES = {
     login: "/auth/login",
     me: "/auth/me",
     verifyEmail: "/auth/verify-email",
+    keycloakCallback: "/auth/keycloak-callback",
   },
   candidate: {
     profile: "/candidate/profile",

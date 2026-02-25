@@ -27,23 +27,41 @@ Monorepo que concentra frontend, backend e pacotes compartilhados em um único r
 
 ## Quick Start
 
+### Opção A: Desenvolvimento local
+
 ```bash
-# 1. Instalar dependências (monorepo com workspaces)
 npm install
-
-# 2. Subir PostgreSQL e Mailpit
 docker-compose up -d postgres mailpit
-
-# 3. Configurar banco e seed
 cd apps/api && npx prisma migrate dev && npx prisma db seed && cd ../..
-
-# 4. Rodar API e Web
 npm run dev
 ```
 
-- **Web:** http://localhost:3000  
-- **API:** http://localhost:3001  
-- **Mailpit (emails):** http://localhost:8025
+| Serviço  | URL                    |
+|----------|------------------------|
+| Web      | http://localhost:3000  |
+| API      | http://localhost:3001  |
+| Mailpit  | http://localhost:8025  |
+
+### Opção B: Stack completa (Docker, porta 80)
+
+Toda a infra com Nginx, Keycloak, API, Web e banco:
+
+```bash
+docker-compose up -d
+```
+
+| Serviço        | URL                         |
+|----------------|-----------------------------|
+| Aplicação      | http://localhost            |
+| Mailpit        | http://localhost:8025        |
+| Keycloak Admin | http://localhost/auth       |
+
+**Credenciais padrão:**
+
+- **Keycloak (console):** `admin` / `admin`
+- **Realm recruitment (usuário de teste):** `platform-admin` / `Admin123!`
+
+> 📖 **Configuração detalhada:** [docs/infrastructure-and-setup.md](docs/infrastructure-and-setup.md)
 
 ## Variáveis de Ambiente
 
@@ -55,16 +73,19 @@ Copie `apps/api/env-template` para `apps/api/.env`:
 |----------|-------------|-----------|
 | `DATABASE_URL` | ✓ | Connection string PostgreSQL |
 | `JWT_SECRET` | ✓ | Mínimo 32 caracteres em produção |
-| `FRONTEND_URL` | ✓ | URL do frontend (CORS, emails) |
+| `FRONTEND_URL` | ✓ | URL do frontend (CORS, links em e-mails) |
 | `PORT` | | Porta (padrão: 3001) |
-| `SMTP_*` | | SMTP para envio de emails |
+| `SMTP_*` | | SMTP para envio de e-mails |
 | `GITHUB_TOKEN` | | API GitHub (análise de repositórios) |
 
 ### Web (`apps/web`)
 
-| Variável | Descrição |
-|----------|-----------|
-| `NEXT_PUBLIC_API_URL` | URL da API (padrão: `http://localhost:3001/api`) |
+| Variável | Dev (sem Nginx) | Docker (porta 80) |
+|----------|-----------------|-------------------|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3001/api` | `http://localhost/api` |
+| `NEXT_PUBLIC_KEYCLOAK_URL` | — | `http://localhost/auth` |
+| `NEXT_PUBLIC_KEYCLOAK_REALM` | — | `recruitment` |
+| `NEXT_PUBLIC_KEYCLOAK_CLIENT_ID` | — | `recruitment-web` |
 
 ## Estrutura do Projeto
 
@@ -76,12 +97,13 @@ Copie `apps/api/env-template` para `apps/api/.env`:
 │   │   └── env-template
 │   └── web/          # Next.js frontend
 │       └── app/      # App Router
-├── packages/
-│   └── shared/       # Tipos, constantes e API_ROUTES
-├── docs/             # Documentação
+├── packages/shared/  # Tipos e constantes
+├── nginx/            # API gateway
+├── keycloak/         # Realm e usuários
+├── docker/           # Init scripts
+├── docs/
 ├── docker-compose.yml
-├── ecosystem.config.cjs  # PM2
-└── package.json      # Workspaces
+└── package.json
 ```
 
 ## Scripts
@@ -131,9 +153,12 @@ pm2 start ecosystem.config.cjs
 
 ## Documentação
 
-- [`docs/README.md`](docs/README.md) — Índice da documentação
-- [`docs/recruitment-system-full-spec.md`](docs/recruitment-system-full-spec.md) — Especificação do fluxo de recrutamento
-- [`docs/journeys-and-interactions.md`](docs/journeys-and-interactions.md) — Jornadas de usuários
+| Arquivo | Descrição |
+|---------|-----------|
+| [docs/infrastructure-and-setup.md](docs/infrastructure-and-setup.md) | **Infraestrutura** — Docker, Nginx, Keycloak, variáveis e fluxo de auth |
+| [docs/README.md](docs/README.md) | Índice da documentação |
+| [docs/recruitment-system-full-spec.md](docs/recruitment-system-full-spec.md) | Especificação do fluxo de recrutamento |
+| [docs/journeys-and-interactions.md](docs/journeys-and-interactions.md) | Jornadas de usuários |
 
 ## Contribuindo
 
