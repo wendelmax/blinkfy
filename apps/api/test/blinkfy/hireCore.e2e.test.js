@@ -113,4 +113,19 @@ test('agency turns an imported, consented candidate into a reviewed shortlist en
         'application.score_recomputed',
         'application.stage_changed',
     ]));
+
+    const analytics = await api(context, 'get', `/api/blinkfy/clients/${context.client.id}/analytics`);
+    expect(analytics.status).toBe(200);
+    expect(analytics.body.applications.total).toBe(1);
+    expect(analytics.body.applications.byStage.shortlisted).toBe(1);
+    expect(analytics.body.consent).toEqual({ active: 1, revoked: 0, missing: 0 });
+    expect(analytics.body.score.count).toBe(1);
+
+    const otherClient = await prisma.client.create({
+        data: { workspaceId: context.workspace.id, name: `Other client ${runId}` },
+    });
+    const otherClientAnalytics = await api(context, 'get', `/api/blinkfy/clients/${otherClient.id}/analytics`);
+    expect(otherClientAnalytics.status).toBe(200);
+    expect(otherClientAnalytics.body.applications.total).toBe(0);
+    expect(otherClientAnalytics.body.applications.byStage.shortlisted).toBe(0);
 });
