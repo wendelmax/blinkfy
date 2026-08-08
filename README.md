@@ -22,7 +22,7 @@ Monorepo que concentra frontend, backend e pacotes compartilhados em um único r
 
 ## Pré-requisitos
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 20.9+
 - [Docker](https://www.docker.com/) e Docker Compose
 
 ## Quick Start
@@ -77,6 +77,20 @@ Copie `apps/api/env-template` para `apps/api/.env`:
 | `PORT` | | Porta (padrão: 3001) |
 | `SMTP_*` | | SMTP para envio de e-mails |
 | `GITHUB_TOKEN` | | API GitHub (análise de repositórios) |
+
+Para o piloto Blinkfy Hire, use um banco de teste separado. O teste da API
+recusa URLs cujo nome não contenha `test`:
+
+```bash
+docker compose up -d postgres-test
+export TEST_DATABASE_URL=postgresql://admin:password@localhost:5433/blinkfy_test
+export DATABASE_URL="$TEST_DATABASE_URL"
+```
+
+As variáveis do navegador são `NEXT_PUBLIC_API_URL`,
+`NEXT_PUBLIC_KEYCLOAK_URL`, `NEXT_PUBLIC_KEYCLOAK_REALM` e
+`NEXT_PUBLIC_KEYCLOAK_CLIENT_ID`. Em produção, configure também
+`FRONTEND_URL`, `CORS_ORIGIN` e um `JWT_SECRET` forte.
 
 ### Web (`apps/web`)
 
@@ -159,6 +173,7 @@ pm2 start ecosystem.config.cjs
 | [docs/README.md](docs/README.md) | Índice da documentação |
 | [docs/recruitment-system-full-spec.md](docs/recruitment-system-full-spec.md) | Especificação do fluxo de recrutamento |
 | [docs/journeys-and-interactions.md](docs/journeys-and-interactions.md) | Jornadas de usuários |
+| [docs/blinkfy-hire-pilot.md](docs/blinkfy-hire-pilot.md) | Runbook do piloto Blinkfy Hire |
 
 ## Contribuindo
 

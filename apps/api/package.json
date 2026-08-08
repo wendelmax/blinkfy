@@ -6,8 +6,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "seed": "node prisma/seed.js"
+    "test": "vitest run",
+    "seed": "node prisma/seed.js",
+    "prisma:adopt-legacy-baseline": "node prisma/adoptLegacyBaseline.js",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@recruitment-platform/shared": "*",
@@ -26,9 +28,11 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "supertest": "^7.1.4",
+    "vitest": "^4.0.15"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.9.0"
   }
 }

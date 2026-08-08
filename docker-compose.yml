@@ -20,6 +20,25 @@ services:
       timeout: 5s
       retries: 5
 
+  # Isolated database for the API test suite. It must never share the `newone`
+  # database used by local development or the application container.
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: recruitment-db-test
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: blinkfy_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d blinkfy_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: recruitment-mailpit
@@ -103,3 +122,4 @@ services:
 
 volumes:
   postgres_data:
+  postgres_test_data:

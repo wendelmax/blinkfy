@@ -42,3 +42,9 @@ yarn-error.log*
 
 # Vercel
 .vercel
+
+# Local visual brainstorming sessions
+.superpowers/
+
+# Local git worktrees
+.worktrees/
