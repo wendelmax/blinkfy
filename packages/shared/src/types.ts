@@ -31,6 +31,34 @@ export interface BlinkfyJob {
 }
 
 export type ApplicationStage = "mapped" | "reviewed" | "interested" | "screened" | "shortlisted" | "rejected";
+export type AnalyticsStage = ApplicationStage;
+
+export interface AnalyticsScope {
+  clientId: string;
+  jobId?: string | null;
+  from?: string | null;
+  to?: string | null;
+}
+
+export interface StageMetrics {
+  [stage: string]: number;
+}
+
+export interface ConversionMetrics {
+  [transition: string]: number | null;
+}
+
+export interface ConsentMetrics { active: number; revoked: number; missing: number }
+export interface ScoreMetrics { count: number; average: number | null; minimum: number | null; maximum: number | null }
+export interface AnalyticsSummary {
+  scope: AnalyticsScope;
+  applications: { total: number; byStage: StageMetrics };
+  conversion: ConversionMetrics;
+  stageTime: { [stage: string]: { averageSeconds: number | null; sampleSize: number } };
+  consent: ConsentMetrics;
+  score: ScoreMetrics;
+  generatedAt: string;
+}
 export type FitScoreConfidence = "low" | "medium" | "high";
 
 export interface FactorEvidence {

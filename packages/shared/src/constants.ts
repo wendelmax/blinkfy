@@ -29,6 +29,13 @@ export const APPLICATION_STAGES = [
   "rejected",
 ] as const;
 
+export const ANALYTICS_STAGE_TRANSITIONS = [
+  "mappedToReviewed",
+  "reviewedToInterested",
+  "interestedToScreened",
+  "screenedToShortlisted",
+] as const;
+
 export const NEXT_APPLICATION_STAGE = {
   mapped: "reviewed",
   reviewed: "interested",
