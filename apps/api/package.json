@@ -8,6 +8,7 @@
     "dev": "node src/index.js",
     "test": "vitest run",
     "seed": "node prisma/seed.js",
+    "prisma:adopt-legacy-baseline": "node prisma/adoptLegacyBaseline.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

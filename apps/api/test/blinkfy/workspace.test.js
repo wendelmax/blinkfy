@@ -26,6 +26,11 @@ test('records an immutable audit event for a workspace action', async () => {
     await prisma.workspaceMembership.create({
         data: { workspaceId: workspace.id, userId: owner.id, role: 'owner' },
     });
+    await expect(
+        prisma.workspaceMembership.create({
+            data: { workspaceId: workspace.id, userId: owner.id, role: 'admin' },
+        }),
+    ).rejects.toThrow();
 
     const event = await recordAuditEvent({
         workspaceId: workspace.id,
