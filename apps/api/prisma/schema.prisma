@@ -205,6 +205,9 @@ model Workspace {
   clients     Client[]
   memberships WorkspaceMembership[]
   auditEvents AuditEvent[]
+  candidates  Candidate[]
+  consents    CandidateConsent[]
+  imports     CandidateImport[]
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
 }
@@ -221,14 +224,17 @@ model WorkspaceMembership {
 }
 
 model Client {
-  id          String       @id @default(cuid())
-  workspaceId String
-  name        String
-  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  jobs        BlinkfyJob[]
-  jobImports  JobImport[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id               String                 @id @default(cuid())
+  workspaceId      String
+  name             String
+  workspace        Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  jobs             BlinkfyJob[]
+  jobImports       JobImport[]
+  candidateImports CandidateImport[]
+  consents         CandidateConsent[]
+  applications     CandidateApplication[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 }
 
 model AuditEvent {
@@ -304,4 +310,101 @@ model JobImport {
 
   @@index([clientId, createdAt])
   @@map("job_imports")
+}
+
+enum CandidateImportStatus {
+  completed
+  completed_with_errors
+  failed
+}
+
+model Candidate {
+  id                    String                 @id @default(cuid())
+  workspaceId           String
+  fullName              String
+  normalizedEmail       String?
+  normalizedLinkedinUrl String?
+  profile               Json
+  sourceMetadata        Json?
+  visibility            String                 @default("private")
+  workspace             Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  identities            CandidateIdentity[]
+  consents              CandidateConsent[]
+  applications          CandidateApplication[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([workspaceId])
+  @@map("candidates")
+}
+
+model CandidateIdentity {
+  id              String           @id @default(cuid())
+  candidateId     String
+  importId        String?
+  source          String
+  externalId      String?
+  sourceMetadata  Json?
+  candidate       Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidateImport CandidateImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
+
+  @@index([candidateId, source])
+  @@index([importId])
+  @@map("candidate_identities")
+}
+
+model CandidateConsent {
+  id          String    @id @default(cuid())
+  candidateId String
+  workspaceId String
+  clientId    String?
+  purpose     String
+  grantedAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  evidence    String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@index([candidateId, purpose, clientId, revokedAt])
+  @@index([workspaceId, purpose])
+  @@map("candidate_consents")
+}
+
+model CandidateImport {
+  id             String                @id @default(cuid())
+  workspaceId    String
+  clientId       String
+  filename       String
+  source         String
+  status         CandidateImportStatus
+  createdCount   Int                   @default(0)
+  duplicateCount Int                   @default(0)
+  invalidCount   Int                   @default(0)
+  errors         Json?
+  workspace      Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client         Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  identities     CandidateIdentity[]
+  createdAt      DateTime              @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([clientId, createdAt])
+  @@map("candidate_imports")
+}
+
+model CandidateApplication {
+  id          String    @id @default(cuid())
+  candidateId String
+  clientId    String
+  stage       String    @default("mapped")
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([candidateId, clientId])
+  @@index([clientId, stage])
+  @@map("candidate_applications")
 }
