@@ -264,7 +264,7 @@ enum JobImportStatus {
 }
 
 model BlinkfyJob {
-  id           String          @id @default(cuid())
+  id           String                 @id @default(cuid())
   clientId     String
   title        String
   description  String?
@@ -273,11 +273,12 @@ model BlinkfyJob {
   salaryMin    Int?
   salaryMax    Int?
   requirements Json
-  status       TalentJobStatus @default(draft)
-  client       Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  status       TalentJobStatus        @default(draft)
+  client       Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
   scorecard    JobScorecard?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  applications CandidateApplication[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 
   @@index([clientId, status])
   @@map("talent_jobs")
@@ -395,16 +396,59 @@ model CandidateImport {
 }
 
 model CandidateApplication {
-  id          String    @id @default(cuid())
-  candidateId String
-  clientId    String
-  stage       String    @default("mapped")
-  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String             @id @default(cuid())
+  candidateId    String
+  clientId       String
+  jobId          String?
+  stage          ApplicationStage   @default(mapped)
+  mappedAt       DateTime           @default(now())
+  reviewedAt     DateTime?
+  interestedAt   DateTime?
+  screenedAt     DateTime?
+  shortlistedAt  DateTime?
+  rejectedAt     DateTime?
+  candidate      Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  client         Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  job            BlinkfyJob?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  scoreSnapshots FitScoreSnapshot[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
-  @@unique([candidateId, clientId])
+  @@unique([candidateId, jobId])
   @@index([clientId, stage])
+  @@index([jobId, stage])
   @@map("candidate_applications")
+}
+
+enum ApplicationStage {
+  mapped
+  reviewed
+  interested
+  screened
+  shortlisted
+  rejected
+}
+
+enum FitScoreConfidence {
+  low
+  medium
+  high
+}
+
+model FitScoreSnapshot {
+  id               String               @id @default(cuid())
+  applicationId    String
+  score            Int
+  confidence       FitScoreConfidence
+  factors          Json
+  gaps             Json
+  computedAt       DateTime             @default(now())
+  overrideScore    Int?
+  overrideReason   String?
+  overrideByUserId String?
+  overriddenAt     DateTime?
+  application      CandidateApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, computedAt])
+  @@map("fit_score_snapshots")
 }

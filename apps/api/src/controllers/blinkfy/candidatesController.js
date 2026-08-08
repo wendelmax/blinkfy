@@ -67,7 +67,7 @@ function createCandidatesController({ prisma }) {
     }
 
     async function shareCandidate(req, res) {
-        const { clientId } = req.body || {};
+        const { clientId, jobId } = req.body || {};
         if (typeof clientId !== 'string' || clientId.trim() === '') {
             return res.status(422).json({ message: 'clientId is required' });
         }
@@ -81,6 +81,15 @@ function createCandidatesController({ prisma }) {
         if (!client) {
             return res.status(404).json({ message: 'Client not found' });
         }
+        if (jobId !== undefined && (typeof jobId !== 'string' || jobId.trim() === '')) {
+            return res.status(422).json({ message: 'jobId must be a nonempty string when provided' });
+        }
+        if (jobId) {
+            const job = await prisma.blinkfyJob.findFirst({ where: { id: jobId, clientId: client.id } });
+            if (!job) {
+                return res.status(404).json({ message: 'Job not found for client' });
+            }
+        }
         let application;
         try {
             application = await prisma.$transaction(async (transaction) => {
@@ -93,14 +102,15 @@ function createCandidatesController({ prisma }) {
                     error.code = 'ACTIVE_PRESENTATION_CONSENT_REQUIRED';
                     throw error;
                 }
-                const created = await transaction.candidateApplication.upsert({
-                    where: { candidateId_clientId: { candidateId: candidate.id, clientId: client.id } },
-                    create: { candidateId: candidate.id, clientId: client.id, stage: 'mapped' },
-                    update: {},
+                const existing = await transaction.candidateApplication.findFirst({
+                    where: { candidateId: candidate.id, clientId: client.id, jobId: jobId || null },
+                });
+                const created = existing || await transaction.candidateApplication.create({
+                    data: { candidateId: candidate.id, clientId: client.id, jobId: jobId || null, stage: 'mapped' },
                 });
                 await recordAuditEvent({
                     prisma: transaction, workspaceId: req.workspace.id, clientId: client.id, actorUserId: req.user.id,
-                    entityType: 'candidate', entityId: candidate.id, action: 'candidate.shared', metadata: { applicationId: created.id },
+                    entityType: 'candidate', entityId: candidate.id, action: 'candidate.shared', metadata: { applicationId: created.id, jobId: jobId || null },
                 });
                 return created;
             });
@@ -110,7 +120,7 @@ function createCandidatesController({ prisma }) {
             }
             throw error;
         }
-        return res.status(201).json({ id: application.id, candidateId: application.candidateId, clientId: application.clientId, stage: application.stage });
+        return res.status(201).json({ id: application.id, candidateId: application.candidateId, clientId: application.clientId, jobId: application.jobId, stage: application.stage });
     }
 
     return { getCandidate, recordConsent, shareCandidate };

@@ -12,6 +12,10 @@ export const AUDIT_ACTIONS = {
   jobImportFailed: "job.import_failed",
   candidateDuplicateDetected: "candidate.duplicate_detected",
   candidateShared: "candidate.shared",
+  applicationScoreRecomputed: "application.score_recomputed",
+  applicationStageChanged: "application.stage_changed",
+  applicationRejected: "application.rejected",
+  applicationScoreOverridden: "application.score_overridden",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

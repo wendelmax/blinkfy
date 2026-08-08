@@ -30,6 +30,34 @@ export interface BlinkfyJob {
   scorecard: { weights: JobScorecardWeights };
 }
 
+export type ApplicationStage = "mapped" | "reviewed" | "interested" | "screened" | "shortlisted" | "rejected";
+export type FitScoreConfidence = "low" | "medium" | "high";
+
+export interface FactorEvidence {
+  key: "skills" | "experience" | "context" | "preferences" | "signals";
+  weight: number;
+  score: number;
+  evidence: string[];
+}
+
+export interface FitScore {
+  score: number;
+  confidence: FitScoreConfidence;
+  factors: FactorEvidence[];
+  gaps: string[];
+  overrideScore?: number | null;
+  overrideReason?: string | null;
+}
+
+export interface CandidateApplication {
+  id: string;
+  candidateId: string;
+  clientId: string;
+  jobId?: string | null;
+  stage: ApplicationStage;
+  score?: FitScore | null;
+}
+
 export interface User {
   id: string;
   email: string;
