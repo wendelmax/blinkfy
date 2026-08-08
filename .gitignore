@@ -45,3 +45,6 @@ yarn-error.log*
 
 # Local visual brainstorming sessions
 .superpowers/
+
+# Local git worktrees
+.worktrees/
