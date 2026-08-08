@@ -39,12 +39,10 @@ function createCandidatesController({ prisma }) {
         }
 
         if (revoke) {
-            const activeConsents = await prisma.candidateConsent.findMany({
-                where: { candidateId: candidate.id, workspaceId: req.workspace.id, purpose, clientId: clientId ?? null, revokedAt: null },
-            });
             await prisma.$transaction(async (transaction) => {
+                await transaction.$queryRaw`SELECT "id" FROM "candidates" WHERE "id" = ${candidate.id} FOR UPDATE`;
                 await transaction.candidateConsent.updateMany({
-                    where: { id: { in: activeConsents.map(({ id }) => id) } },
+                    where: { candidateId: candidate.id, workspaceId: req.workspace.id, purpose, clientId: clientId ?? null, revokedAt: null },
                     data: { revokedAt: new Date() },
                 });
                 await recordAuditEvent({
@@ -75,7 +73,6 @@ function createCandidatesController({ prisma }) {
         }
         const candidate = await prisma.candidate.findFirst({
             where: { id: req.params.candidateId, workspaceId: req.workspace.id },
-            include: { consents: true },
         });
         if (!candidate) {
             return res.status(404).json({ message: 'Candidate not found' });
@@ -84,22 +81,35 @@ function createCandidatesController({ prisma }) {
         if (!client) {
             return res.status(404).json({ message: 'Client not found' });
         }
-        if (!hasActivePresentationConsent(candidate.consents, client.id)) {
-            return res.status(409).json({ message: 'Active client_presentation consent is required before sharing' });
+        let application;
+        try {
+            application = await prisma.$transaction(async (transaction) => {
+                await transaction.$queryRaw`SELECT "id" FROM "candidates" WHERE "id" = ${candidate.id} FOR UPDATE`;
+                const consents = await transaction.candidateConsent.findMany({
+                    where: { candidateId: candidate.id, workspaceId: req.workspace.id, purpose: 'client_presentation', revokedAt: null },
+                });
+                if (!hasActivePresentationConsent(consents, client.id)) {
+                    const error = new Error('ACTIVE_PRESENTATION_CONSENT_REQUIRED');
+                    error.code = 'ACTIVE_PRESENTATION_CONSENT_REQUIRED';
+                    throw error;
+                }
+                const created = await transaction.candidateApplication.upsert({
+                    where: { candidateId_clientId: { candidateId: candidate.id, clientId: client.id } },
+                    create: { candidateId: candidate.id, clientId: client.id, stage: 'mapped' },
+                    update: {},
+                });
+                await recordAuditEvent({
+                    prisma: transaction, workspaceId: req.workspace.id, clientId: client.id, actorUserId: req.user.id,
+                    entityType: 'candidate', entityId: candidate.id, action: 'candidate.shared', metadata: { applicationId: created.id },
+                });
+                return created;
+            });
+        } catch (error) {
+            if (error.code === 'ACTIVE_PRESENTATION_CONSENT_REQUIRED') {
+                return res.status(409).json({ message: 'Active client_presentation consent is required before sharing' });
+            }
+            throw error;
         }
-
-        const application = await prisma.$transaction(async (transaction) => {
-            const created = await transaction.candidateApplication.upsert({
-                where: { candidateId_clientId: { candidateId: candidate.id, clientId: client.id } },
-                create: { candidateId: candidate.id, clientId: client.id, stage: 'mapped' },
-                update: {},
-            });
-            await recordAuditEvent({
-                prisma: transaction, workspaceId: req.workspace.id, clientId: client.id, actorUserId: req.user.id,
-                entityType: 'candidate', entityId: candidate.id, action: 'candidate.shared', metadata: { applicationId: created.id },
-            });
-            return created;
-        });
         return res.status(201).json({ id: application.id, candidateId: application.candidateId, clientId: application.clientId, stage: application.stage });
     }
 

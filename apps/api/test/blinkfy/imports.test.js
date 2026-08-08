@@ -58,6 +58,24 @@ test('deduplicates the same normalized email inside a workspace', async () => {
     expect(events).toHaveLength(1);
 });
 
+test('returns an idempotent duplicate result when identical imports arrive concurrently', async () => {
+    const context = await createContext();
+    const csv = [
+        'fullName,email,linkedinUrl,currentTitle,location,skills,source',
+        'Concurrent Sam,concurrent@example.com,https://linkedin.com/in/concurrent-sam,Account Executive,Remote,enterprise sales,ats_export',
+    ].join('\n');
+
+    const [first, second] = await Promise.all([
+        importCandidates(context, csv),
+        importCandidates(context, csv),
+    ]);
+
+    expect([first.status, second.status].sort()).toEqual([201, 201]);
+    expect([first.body.created, second.body.created].sort()).toEqual([0, 1]);
+    expect([first.body.duplicates.length, second.body.duplicates.length].sort()).toEqual([0, 1]);
+    expect(await prisma.candidate.count({ where: { workspaceId: context.workspace.id } })).toBe(1);
+});
+
 test('rejects invalid rows without creating candidates and stores non-sensitive row errors', async () => {
     const context = await createContext();
     const response = await importCandidates(context, [

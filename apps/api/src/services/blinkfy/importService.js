@@ -3,6 +3,13 @@ const { recordAuditEvent } = require('./auditService');
 
 const candidateCsvHeaders = ['fullName', 'email', 'linkedinUrl', 'currentTitle', 'location', 'skills', 'source'];
 
+class CandidateImportPersistenceError extends Error {
+    constructor() {
+        super('Candidate import could not be completed');
+        this.name = 'CandidateImportPersistenceError';
+    }
+}
+
 function parseCsv(csv) {
     if (typeof csv !== 'string' || csv.trim() === '') {
         throw new TypeError('csv must be a nonempty string');
@@ -107,33 +114,94 @@ function parseCandidateCsv(csv) {
     }, { validRows: [], invalidRows: [] });
 }
 
+async function lockCandidateIdentities(transaction, row) {
+    const identityKeys = [
+        row.email && `email:${row.email}`,
+        row.linkedinUrl && `linkedin:${row.linkedinUrl}`,
+    ].filter(Boolean).sort();
+
+    for (const identityKey of identityKeys) {
+        await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${identityKey}))`;
+    }
+}
+
+async function persistFailedImport({ prisma, workspaceId, clientId, actorUserId, filename }) {
+    const failedImport = await prisma.candidateImport.create({
+        data: {
+            workspaceId,
+            clientId,
+            filename: String(filename).trim() || 'candidates.csv',
+            source: 'csv',
+            status: 'failed',
+            errors: [{ field: 'import', message: 'Import could not be processed' }],
+        },
+    });
+    await recordAuditEvent({
+        prisma,
+        workspaceId,
+        clientId,
+        actorUserId,
+        entityType: 'candidate_import',
+        entityId: failedImport.id,
+        action: 'candidate.import_failed',
+        metadata: { reason: 'persistence_failure' },
+    });
+}
+
 async function importCandidates({ prisma, workspaceId, clientId, actorUserId, csv, filename = 'candidates.csv' }) {
     const { validRows, invalidRows } = parseCandidateCsv(csv);
-    return prisma.$transaction(async (transaction) => {
-        const candidateImport = await transaction.candidateImport.create({
-            data: {
-                workspaceId,
-                clientId,
-                filename: String(filename).trim() || 'candidates.csv',
-                source: 'csv',
-                status: invalidRows.length > 0 ? 'completed_with_errors' : 'completed',
-                invalidCount: invalidRows.length,
-                errors: invalidRows.length > 0 ? invalidRows : undefined,
-            },
-        });
-        const created = [];
-        const duplicates = [];
-
-        for (const row of validRows) {
-            const duplicate = await findCandidateDuplicate({
-                prisma: transaction,
-                workspaceId,
-                email: row.email,
-                linkedinUrl: row.linkedinUrl,
+    try {
+        return await prisma.$transaction(async (transaction) => {
+            const candidateImport = await transaction.candidateImport.create({
+                data: {
+                    workspaceId,
+                    clientId,
+                    filename: String(filename).trim() || 'candidates.csv',
+                    source: 'csv',
+                    status: invalidRows.length > 0 ? 'completed_with_errors' : 'completed',
+                    invalidCount: invalidRows.length,
+                    errors: invalidRows.length > 0 ? invalidRows : undefined,
+                },
             });
-            if (duplicate) {
-                await transaction.candidateIdentity.create({
-                    data: { candidateId: duplicate.id, importId: candidateImport.id, source: row.source },
+            const created = [];
+            const duplicates = [];
+
+            for (const row of validRows) {
+                await lockCandidateIdentities(transaction, row);
+                const duplicate = await findCandidateDuplicate({
+                    prisma: transaction,
+                    workspaceId,
+                    email: row.email,
+                    linkedinUrl: row.linkedinUrl,
+                });
+                if (duplicate) {
+                    await transaction.candidateIdentity.create({
+                        data: { candidateId: duplicate.id, importId: candidateImport.id, source: row.source },
+                    });
+                    await recordAuditEvent({
+                        prisma: transaction,
+                        workspaceId,
+                        clientId,
+                        actorUserId,
+                        entityType: 'candidate',
+                        entityId: duplicate.id,
+                        action: 'candidate.duplicate_detected',
+                        metadata: { importId: candidateImport.id, source: row.source },
+                    });
+                    duplicates.push({ id: duplicate.id, row: validRows.indexOf(row) + 2 });
+                    continue;
+                }
+
+                const candidate = await transaction.candidate.create({
+                    data: {
+                        workspaceId,
+                        fullName: row.fullName,
+                        normalizedEmail: row.email,
+                        normalizedLinkedinUrl: row.linkedinUrl,
+                        profile: { currentTitle: row.currentTitle, location: row.location, skills: row.skills },
+                        sourceMetadata: { source: row.source },
+                        identities: { create: { importId: candidateImport.id, source: row.source } },
+                    },
                 });
                 await recordAuditEvent({
                     prisma: transaction,
@@ -141,55 +209,44 @@ async function importCandidates({ prisma, workspaceId, clientId, actorUserId, cs
                     clientId,
                     actorUserId,
                     entityType: 'candidate',
-                    entityId: duplicate.id,
-                    action: 'candidate.duplicate_detected',
+                    entityId: candidate.id,
+                    action: 'candidate.imported',
                     metadata: { importId: candidateImport.id, source: row.source },
                 });
-                duplicates.push({ id: duplicate.id, row: validRows.indexOf(row) + 2 });
-                continue;
+                created.push(candidate);
             }
 
-            const candidate = await transaction.candidate.create({
-                data: {
-                    workspaceId,
-                    fullName: row.fullName,
-                    normalizedEmail: row.email,
-                    normalizedLinkedinUrl: row.linkedinUrl,
-                    profile: { currentTitle: row.currentTitle, location: row.location, skills: row.skills },
-                    sourceMetadata: { source: row.source },
-                    identities: { create: { importId: candidateImport.id, source: row.source } },
-                },
+            await transaction.candidateImport.update({
+                where: { id: candidateImport.id },
+                data: { createdCount: created.length, duplicateCount: duplicates.length },
             });
             await recordAuditEvent({
                 prisma: transaction,
                 workspaceId,
                 clientId,
                 actorUserId,
-                entityType: 'candidate',
-                entityId: candidate.id,
-                action: 'candidate.imported',
-                metadata: { importId: candidateImport.id, source: row.source },
+                entityType: 'candidate_import',
+                entityId: candidateImport.id,
+                action: 'candidate.import_completed',
+                metadata: { created: created.length, duplicates: duplicates.length, invalidRows: invalidRows.length },
             });
-            created.push(candidate);
+
+            return { importId: candidateImport.id, created, duplicates, invalidRows };
+        });
+    } catch (error) {
+        try {
+            await persistFailedImport({ prisma, workspaceId, clientId, actorUserId, filename });
+        } catch {
+            // The original failure remains the useful diagnostic for callers and logs.
         }
-
-        await transaction.candidateImport.update({
-            where: { id: candidateImport.id },
-            data: { createdCount: created.length, duplicateCount: duplicates.length },
-        });
-        await recordAuditEvent({
-            prisma: transaction,
-            workspaceId,
-            clientId,
-            actorUserId,
-            entityType: 'candidate_import',
-            entityId: candidateImport.id,
-            action: 'candidate.import_completed',
-            metadata: { created: created.length, duplicates: duplicates.length, invalidRows: invalidRows.length },
-        });
-
-        return { importId: candidateImport.id, created, duplicates, invalidRows };
-    });
+        throw new CandidateImportPersistenceError();
+    }
 }
 
-module.exports = { candidateCsvHeaders, importCandidates, parseCandidateCsv };
+module.exports = {
+    CandidateImportPersistenceError,
+    candidateCsvHeaders,
+    importCandidates,
+    parseCandidateCsv,
+    persistFailedImport,
+};
