@@ -4,6 +4,8 @@
 
 export type UserType = "candidate" | "recruiter" | "company" | "admin";
 
+export type WorkspaceRole = "owner" | "admin" | "recruiter" | "viewer";
+
 export interface User {
   id: string;
   email: string;

@@ -4,6 +4,16 @@
 
 export const USER_TYPES = ["candidate", "recruiter", "company", "admin"] as const;
 
+export const AUDIT_ACTIONS = {
+  clientCreated: "client.created",
+  jobCreated: "job.created",
+  jobScorecardConfigured: "job.scorecard_configured",
+  candidateDuplicateDetected: "candidate.duplicate_detected",
+  candidateShared: "candidate.shared",
+} as const;
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
+
 export const API_ROUTES = {
   auth: {
     register: "/auth/register",

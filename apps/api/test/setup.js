@@ -1,5 +1,5 @@
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL ||= 'postgresql://admin:password@localhost:5432/recruitment_platform_test';
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://admin:password@localhost:5432/recruitment_platform_test';
 
 let databaseName;
 
