@@ -71,6 +71,7 @@ export default function HirePage() {
             <nav aria-label="Hire workspace" style={{ display: 'flex', gap: 12, margin: '20px 0' }}>
                 <Link href="/hire/jobs/new">Create job</Link>
                 <Link href="/hire/candidates/import">Import candidates</Link>
+                <Link href="/hire/analytics">Pipeline analytics</Link>
             </nav>
             <section aria-labelledby="jobs-heading">
                 <h2 id="jobs-heading">Jobs</h2>
