@@ -1,6 +1,9 @@
 {
   "name": "recruitment-platform",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",

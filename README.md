@@ -22,7 +22,7 @@ Monorepo que concentra frontend, backend e pacotes compartilhados em um único r
 
 ## Pré-requisitos
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 20.9+
 - [Docker](https://www.docker.com/) e Docker Compose
 
 ## Quick Start
