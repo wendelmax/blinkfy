@@ -1,5 +1,5 @@
 const factorKeys = ['skills', 'experience', 'context', 'preferences', 'signals'];
-const protectedTraitPattern = /\b(age|gender|sex|race|ethnicity|nationality|disability|religion|pregnan\w*|marital status)\b/i;
+const protectedTraitPattern = /\b(age|idade|edad|gender|genero|sexo|sex|race|raca|raza|ethnicity|etnia|nationality|nacionalidade|nacionalidad|national origin|origem nacional|disability|deficiencia|discapacidad|religion|religiao|faith|creed|pregnan\w*|gravidez|embarazo|marital status|estado civil|orientacao sexual|sexual orientation|identidade de genero|gender identity|lgbtq?\+?|transgender|transgenero|skin color|cor da pele|genetic information|informacao genetica|veteran status)\b/i;
 
 function normalizedList(value) {
     return Array.isArray(value)
@@ -9,6 +9,14 @@ function normalizedList(value) {
 
 function normalizedText(value) {
     return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function normalizedRequirement(value) {
+    return normalizedText(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function isProtectedRequirement(requirement) {
+    return protectedTraitPattern.test(normalizedRequirement(requirement));
 }
 
 function includesRequirement(values, requirement) {
@@ -25,7 +33,7 @@ function factor(key, weight, score, evidence) {
 
 function computeFitScore({ job, candidate }) {
     const profile = candidate?.profile && typeof candidate.profile === 'object' ? candidate.profile : {};
-    const requirements = normalizedList(job?.requirements).filter((requirement) => !protectedTraitPattern.test(requirement));
+    const requirements = normalizedList(job?.requirements).filter((requirement) => !isProtectedRequirement(requirement));
     const skills = normalizedList(profile.skills);
     const title = normalizedText(profile.currentTitle);
     const jobTitle = normalizedText(job?.title);

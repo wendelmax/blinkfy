@@ -51,3 +51,21 @@ test('ignores protected-trait requirements even when they are present in malform
 
     expect(JSON.stringify(result)).not.toMatch(/gender/i);
 });
+
+test('excludes protected traits in Portuguese and common identity terms from scoring evidence and gaps', () => {
+    const protectedRequirements = [
+        'idade', 'sexo feminino', 'raça branca', 'religião', 'deficiência',
+        'orientação sexual', 'identidade de gênero', 'nationality', 'pregnancy',
+        'edad', 'raza', 'religión', 'discapacidad', 'nacionalidad',
+        'cor da pele', 'origem nacional', 'estado civil', 'informação genética',
+    ];
+    const result = computeFitScore({
+        job: { ...fixtureJob, requirements: [...fixtureJob.requirements, ...protectedRequirements] },
+        candidate: fixtureCandidate,
+    });
+
+    const output = JSON.stringify(result).toLowerCase();
+    for (const requirement of protectedRequirements) {
+        expect(output).not.toContain(requirement);
+    }
+});
