@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const candidateRoutes = require('./routes/candidate');
 const paymentRoutes = require('./routes/payment');
+const { createBlinkfyRouter } = require('./routes/blinkfy');
 
 function createApp({ prisma = getPrisma() } = {}) {
     const app = express();
@@ -37,6 +38,7 @@ function createApp({ prisma = getPrisma() } = {}) {
     app.use('/api/job', require('./routes/job'));
     app.use('/api/metadata', require('./routes/metadata'));
     app.use('/api/company', require('./routes/company'));
+    app.use('/api/blinkfy', createBlinkfyRouter({ prisma }));
 
     app.get('/health', async (_req, res) => {
         let dbStatus = 'unknown';
