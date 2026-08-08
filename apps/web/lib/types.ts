@@ -1,7 +1,7 @@
-import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type ApplicationStage, type FitScoreConfidence, type FitScore as SharedFitScore, type JobScorecardWeights } from '@recruitment-platform/shared';
+import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type AnalyticsSummary, type ApplicationStage, type FitScoreConfidence, type FitScore as SharedFitScore, type JobScorecardWeights } from '@recruitment-platform/shared';
 
 export { APPLICATION_STAGES, NEXT_APPLICATION_STAGE };
-export type { ApplicationStage, FitScoreConfidence, JobScorecardWeights };
+export type { AnalyticsSummary, ApplicationStage, FitScoreConfidence, JobScorecardWeights };
 
 export type FitScore = SharedFitScore;
 
