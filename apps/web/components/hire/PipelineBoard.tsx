@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { apiFetch, ApiError } from '../../lib/api';
-import { applicationStages, nextStage, type ApplicationStage, type PipelineApplication } from '../../lib/types';
+import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type ApplicationStage, type PipelineApplication } from '../../lib/types';
 import { ConsentBadge } from './ConsentBadge';
 import { FitScoreCard } from './FitScoreCard';
 
@@ -65,14 +65,14 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
             <p>Scores support human review; they never reject candidates automatically.</p>
             {error && <p role="alert">{error}</p>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(220px, 1fr))', gap: 12, overflowX: 'auto' }}>
-                {applicationStages.map((stage) => {
+                {APPLICATION_STAGES.map((stage) => {
                     const inStage = items.filter((application) => application.stage === stage);
                     return (
                         <section key={stage} aria-label={`${stageLabel(stage)} column`} style={{ background: '#f5f7fa', padding: 12, borderRadius: 8 }}>
                             <h3>{stageLabel(stage)} ({inStage.length})</h3>
                             {inStage.length === 0 && <p>No candidates in this stage.</p>}
                             {inStage.map((application) => {
-                                const targetStage = nextStage[application.stage];
+                                const targetStage = NEXT_APPLICATION_STAGE[application.stage as keyof typeof NEXT_APPLICATION_STAGE];
                                 const override = overrides[application.id] ?? { score: '', reason: '' };
                                 return (
                                     <article key={application.id} style={{ background: '#fff', padding: 12, marginBottom: 10, borderRadius: 8 }}>

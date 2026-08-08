@@ -6,13 +6,14 @@ import { useEffect, useState } from 'react';
 
 import { PipelineBoard } from '../../../../components/hire/PipelineBoard';
 import { apiFetch, ApiError, getActiveClientId } from '../../../../lib/api';
-import type { BlinkfyJob } from '../../../../lib/types';
+import type { BlinkfyJob, PipelineApplication } from '../../../../lib/types';
 
 export default function JobPipelinePage() {
     const params = useParams<{ jobId: string }>();
     const [job, setJob] = useState<BlinkfyJob | null>(null);
     const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
     const [message, setMessage] = useState('');
+    const [applications, setApplications] = useState<PipelineApplication[]>([]);
 
     useEffect(() => {
         const clientId = getActiveClientId();
@@ -30,7 +31,9 @@ export default function JobPipelinePage() {
                     setState('error');
                     return;
                 }
+                const pipeline = await apiFetch<{ items: PipelineApplication[] }>(`/api/blinkfy/jobs/${params.jobId}/applications`);
                 setJob(selected);
+                setApplications(pipeline.items);
                 setState('ready');
             } catch (caught) {
                 const error = caught as ApiError;
@@ -49,7 +52,7 @@ export default function JobPipelinePage() {
             {state === 'ready' && job && <>
                 <h1>{job.title}</h1>
                 <p>{job.requirements.join(' · ')}</p>
-                <PipelineBoard jobId={job.id} applications={[]} />
+                <PipelineBoard jobId={job.id} applications={applications} />
             </>}
         </main>
     );

@@ -20,6 +20,22 @@ export const AUDIT_ACTIONS = {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
+export const APPLICATION_STAGES = [
+  "mapped",
+  "reviewed",
+  "interested",
+  "screened",
+  "shortlisted",
+  "rejected",
+] as const;
+
+export const NEXT_APPLICATION_STAGE = {
+  mapped: "reviewed",
+  reviewed: "interested",
+  interested: "screened",
+  screened: "shortlisted",
+} as const;
+
 export const API_ROUTES = {
   auth: {
     register: "/auth/register",

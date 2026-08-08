@@ -1,29 +1,9 @@
-export type ApplicationStage = 'mapped' | 'reviewed' | 'interested' | 'screened' | 'shortlisted' | 'rejected';
-export type FitScoreConfidence = 'low' | 'medium' | 'high';
+import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type ApplicationStage, type FitScoreConfidence, type FitScore as SharedFitScore, type JobScorecardWeights } from '@recruitment-platform/shared';
 
-export interface ScoreFactor {
-    key: 'skills' | 'experience' | 'context' | 'preferences' | 'signals';
-    weight: number;
-    score: number;
-    evidence: string[];
-}
+export { APPLICATION_STAGES, NEXT_APPLICATION_STAGE };
+export type { ApplicationStage, FitScoreConfidence, JobScorecardWeights };
 
-export interface FitScore {
-    score: number;
-    confidence: FitScoreConfidence;
-    factors: ScoreFactor[];
-    gaps: string[];
-    overrideScore?: number | null;
-    overrideReason?: string | null;
-}
-
-export interface JobScorecardWeights {
-    skills: number;
-    experience: number;
-    context: number;
-    preferences: number;
-    signals: number;
-}
+export type FitScore = SharedFitScore;
 
 export interface BlinkfyJob {
     id: string;
@@ -54,19 +34,3 @@ export interface CandidateImportResult {
     duplicates: Array<{ id: string; row: number }>;
     invalidRows: Array<{ row: number; field: string; message: string }>;
 }
-
-export const applicationStages: ApplicationStage[] = [
-    'mapped',
-    'reviewed',
-    'interested',
-    'screened',
-    'shortlisted',
-    'rejected',
-];
-
-export const nextStage: Partial<Record<ApplicationStage, ApplicationStage>> = {
-    mapped: 'reviewed',
-    reviewed: 'interested',
-    interested: 'screened',
-    screened: 'shortlisted',
-};

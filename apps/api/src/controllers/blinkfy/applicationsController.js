@@ -36,6 +36,7 @@ function serializeScore(snapshot) {
 
 function serializeApplication(application) {
     const snapshot = application.scoreSnapshots?.[0] || application.scoreSnapshot;
+    const candidateProfile = application.candidate?.profile || {};
     return {
         id: application.id,
         candidateId: application.candidateId,
@@ -49,6 +50,13 @@ function serializeApplication(application) {
         shortlistedAt: application.shortlistedAt,
         rejectedAt: application.rejectedAt,
         score: serializeScore(snapshot),
+        ...(application.candidate ? {
+            fullName: application.candidate.fullName,
+            currentTitle: candidateProfile.currentTitle || null,
+            consentRecorded: application.candidate.consents?.some((consent) => consent.purpose === 'client_presentation'
+                && consent.revokedAt === null
+                && (consent.clientId === null || consent.clientId === application.clientId)) ?? false,
+        } : {}),
     };
 }
 
@@ -78,6 +86,30 @@ function parseScoreOverride(body) {
 }
 
 function createApplicationsController({ prisma }) {
+    async function listApplications(req, res) {
+        const job = await prisma.blinkfyJob.findFirst({
+            where: { id: req.params.jobId, client: { workspaceId: req.workspace.id } },
+        });
+        if (!job) {
+            return res.status(404).json({ message: 'Job not found' });
+        }
+        const applications = await prisma.candidateApplication.findMany({
+            where: { jobId: job.id, candidate: { workspaceId: req.workspace.id } },
+            include: {
+                candidate: {
+                    include: {
+                        consents: {
+                            where: { workspaceId: req.workspace.id, purpose: 'client_presentation', revokedAt: null },
+                        },
+                    },
+                },
+                scoreSnapshots: { orderBy: { computedAt: 'desc' }, take: 1 },
+            },
+            orderBy: { mappedAt: 'desc' },
+        });
+        return res.json({ items: applications.map(serializeApplication) });
+    }
+
     async function recomputeScore(req, res) {
         const application = await findApplication({ prisma, workspaceId: req.workspace.id, jobId: req.params.jobId, applicationId: req.params.applicationId });
         if (!application) {
@@ -157,7 +189,7 @@ function createApplicationsController({ prisma }) {
         return res.json({ application: serializeApplication({ ...application, scoreSnapshot: snapshot }), score: serializeScore(snapshot) });
     }
 
-    return { recomputeScore, updateStage, overrideScore };
+    return { listApplications, recomputeScore, updateStage, overrideScore };
 }
 
 module.exports = { createApplicationsController, allowedTransitions, serializeApplication };
