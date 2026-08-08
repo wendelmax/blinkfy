@@ -81,6 +81,48 @@ npm run dev --workspace=apps/api
 NEXT_PUBLIC_API_URL=http://localhost:3001/api npm run dev --workspace=apps/web
 ```
 
+## Analytics operacional
+
+A camada de analytics é consultiva: mede o funil do cliente e evidencia
+gargalos, mas nunca rejeita candidatos nem muda estágios automaticamente.
+
+- **UI:** `/hire/analytics`, acessível pelo link "Pipeline analytics" na
+  workspace do Hire. Filtros de vaga (`jobId`) e intervalo de datas
+  (`from`/`to`) são opcionais; sem filtro, o escopo é todo o histórico do
+  cliente ativo.
+- **API:** `GET /api/blinkfy/clients/:clientId/analytics`, protegida pelo
+  mesmo middleware de workspace do Hire Core. `jobId`, quando informado,
+  precisa pertencer ao `clientId` do escopo; o endpoint retorna `404` para
+  cliente ou vaga inacessível, em vez de vazar a existência do recurso.
+- **Semântica das datas:** UTC, intervalo inclusivo no início e exclusivo no
+  fim (`from <= evento < to`). Datas malformadas ou um intervalo invertido
+  (`from >= to`) retornam `400`.
+- **Conversão sem amostra:** quando o estágio de origem não tem nenhuma
+  aplicação (`byStage[origem] === 0`), a conversão correspondente é `null`,
+  exibida como "No sample" — não `0%`. Tratar os dois casos como
+  equivalentes esconde a diferença entre "sem candidatos" e "conversão
+  zerada".
+- **Duração incompleta:** o tempo médio por estágio usa apenas transições
+  com evento de saída auditado. Uma aplicação parada em um estágio sem
+  transição registrada não entra na média (`sampleSize` reflete só as
+  transições completas), evitando subestimar o tempo real.
+- **Regra de uso:** os números do dashboard apoiam a decisão humana do
+  recrutador; nenhuma métrica de analytics rejeita um candidato, muda um
+  estágio ou dispara ação automática. A decisão final continua sendo de uma
+  pessoa, com motivo registrado.
+
+Executar o teste de aceitação com o passo de analytics incluído:
+
+```bash
+TEST_DATABASE_URL="$TEST_DATABASE_URL" npm run test --workspace=apps/api -- hireCore.e2e.test.js
+```
+
+Após a shortlist, o teste chama o endpoint de analytics do cliente do piloto
+e confirma o total de aplicações, a contagem em `shortlisted`, o
+consentimento ativo e a contagem de scores. Em seguida cria um segundo
+cliente no mesmo workspace e confirma que o analytics dele não inclui a
+aplicação do primeiro cliente.
+
 ## Operação segura
 
 - Registre a origem de cada candidato (`source`) e preserve o histórico de
