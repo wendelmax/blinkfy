@@ -221,12 +221,14 @@ model WorkspaceMembership {
 }
 
 model Client {
-  id          String    @id @default(cuid())
+  id          String       @id @default(cuid())
   workspaceId String
   name        String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  jobs        BlinkfyJob[]
+  jobImports  JobImport[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model AuditEvent {
@@ -240,4 +242,66 @@ model AuditEvent {
   metadata    Json?
   createdAt   DateTime  @default(now())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+enum TalentJobStatus {
+  draft
+  open
+  closed
+
+  @@map("talent_job_status")
+}
+
+enum JobImportStatus {
+  completed
+  failed
+}
+
+model BlinkfyJob {
+  id           String          @id @default(cuid())
+  clientId     String
+  title        String
+  description  String?
+  location     String?
+  workModel    String?
+  salaryMin    Int?
+  salaryMax    Int?
+  requirements Json
+  status       TalentJobStatus @default(draft)
+  client       Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  scorecard    JobScorecard?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([clientId, status])
+  @@map("talent_jobs")
+}
+
+model JobScorecard {
+  id          String     @id @default(cuid())
+  jobId       String     @unique
+  skills      Int
+  experience  Int
+  context     Int
+  preferences Int
+  signals     Int
+  job         BlinkfyJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("job_scorecards")
+}
+
+model JobImport {
+  id        String          @id @default(cuid())
+  clientId  String
+  status    JobImportStatus
+  rowNumber Int
+  source    Json
+  errors    Json?
+  client    Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@index([clientId, createdAt])
+  @@map("job_imports")
 }

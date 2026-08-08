@@ -51,6 +51,7 @@ function isJsonSerializable(value, ancestors = new Set()) {
 }
 
 async function recordAuditEvent({
+    prisma = getPrisma(),
     workspaceId,
     actorUserId,
     clientId,
@@ -73,7 +74,7 @@ async function recordAuditEvent({
 
     const serializedMetadata = serializeMetadata(metadata);
 
-    return getPrisma().auditEvent.create({
+    return prisma.auditEvent.create({
         data: {
             workspaceId,
             actorUserId,

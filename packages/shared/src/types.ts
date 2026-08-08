@@ -6,6 +6,30 @@ export type UserType = "candidate" | "recruiter" | "company" | "admin";
 
 export type WorkspaceRole = "owner" | "admin" | "recruiter" | "viewer";
 
+export type TalentJobStatus = "draft" | "open" | "closed";
+
+export interface JobScorecardWeights {
+  skills: number;
+  experience: number;
+  context: number;
+  preferences: number;
+  signals: number;
+}
+
+export interface BlinkfyJob {
+  id: string;
+  clientId: string;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  workModel?: string | null;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  requirements: string[];
+  status: TalentJobStatus;
+  scorecard: { weights: JobScorecardWeights };
+}
+
 export interface User {
   id: string;
   email: string;

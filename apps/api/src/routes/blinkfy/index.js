@@ -8,7 +8,7 @@ function createBlinkfyRouter({ prisma }) {
     const workspaceMiddleware = createWorkspaceMiddleware({ prisma });
 
     router.use(auth);
-    router.use('/clients/:clientId/jobs', createJobsRouter(workspaceMiddleware));
+    router.use('/clients/:clientId/jobs', createJobsRouter({ ...workspaceMiddleware, prisma }));
 
     return router;
 }

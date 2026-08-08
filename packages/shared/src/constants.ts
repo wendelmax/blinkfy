@@ -8,6 +8,8 @@ export const AUDIT_ACTIONS = {
   clientCreated: "client.created",
   jobCreated: "job.created",
   jobScorecardConfigured: "job.scorecard_configured",
+  jobImported: "job.imported",
+  jobImportFailed: "job.import_failed",
   candidateDuplicateDetected: "candidate.duplicate_detected",
   candidateShared: "candidate.shared",
 } as const;
