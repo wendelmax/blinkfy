@@ -1,7 +1,17 @@
-import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type AnalyticsSummary, type ApplicationStage, type FitScoreConfidence, type FitScore as SharedFitScore, type JobScorecardWeights } from '@recruitment-platform/shared';
+import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type AnalyticsSummary, type ApplicationStage, type CandidateTalentProfile, type CandidateVisibility, type FitScoreConfidence, type FitScore as SharedFitScore, type JobScorecardWeights } from '@recruitment-platform/shared';
 
 export { APPLICATION_STAGES, NEXT_APPLICATION_STAGE };
-export type { AnalyticsSummary, ApplicationStage, FitScoreConfidence, JobScorecardWeights };
+export type { AnalyticsSummary, ApplicationStage, CandidateTalentProfile, CandidateVisibility, FitScoreConfidence, JobScorecardWeights };
+
+export interface TalentConsentSummary {
+    id: string;
+    client: { id: string; name: string } | null;
+    purpose: string;
+    status: 'active' | 'revoked';
+    grantedAt: string;
+    revokedAt?: string | null;
+    createdAt: string;
+}
 
 export type FitScore = SharedFitScore;
 

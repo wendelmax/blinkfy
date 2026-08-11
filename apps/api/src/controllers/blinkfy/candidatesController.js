@@ -5,9 +5,6 @@ function serializeCandidate(candidate) {
     return {
         id: candidate.id,
         fullName: candidate.fullName,
-        email: candidate.normalizedEmail,
-        linkedinUrl: candidate.normalizedLinkedinUrl,
-        profile: candidate.profile,
         visibility: candidate.visibility,
         createdAt: candidate.createdAt,
     };
@@ -54,6 +51,12 @@ function createCandidatesController({ prisma }) {
         }
 
         const consent = await prisma.$transaction(async (transaction) => {
+            await transaction.$queryRaw`SELECT "id" FROM "candidates" WHERE "id" = ${candidate.id} FOR UPDATE`;
+            const existing = await transaction.candidateConsent.findFirst({
+                where: { candidateId: candidate.id, workspaceId: req.workspace.id, clientId: clientId ?? null, purpose, revokedAt: null },
+                orderBy: { createdAt: 'desc' },
+            });
+            if (existing) return existing;
             const created = await transaction.candidateConsent.create({
                 data: { candidateId: candidate.id, workspaceId: req.workspace.id, clientId: clientId ?? null, purpose, evidence: evidence.trim() },
             });
@@ -89,6 +92,11 @@ function createCandidatesController({ prisma }) {
             if (!job) {
                 return res.status(404).json({ message: 'Job not found for client' });
             }
+        }
+        // Candidate-owned profiles must explicitly opt into recruiter presentation.
+        // Legacy imported records without a linked candidate account retain the Hire flow.
+        if (candidate.userId && !['available', 'recruiters_only'].includes(candidate.visibility)) {
+            return res.status(409).json({ message: 'Candidate is not available for recruiter presentation' });
         }
         let application;
         try {

@@ -178,3 +178,6 @@ pm2 start ecosystem.config.cjs
 ## Contribuindo
 
 Contribuições são bem-vindas. Abra uma issue ou PR.
+# Blinkfy Talent pilot
+
+The repository now includes the candidate-controlled Blinkfy Talent workspace alongside Blinkfy Hire. Candidate access is free at launch; recruiter/company sourcing and workflow capabilities are the paid operating surface. See [the pilot guide](docs/blinkfy-talent-pilot.md) for consent semantics, guardrails and the Premium Engagement draft-only boundary.

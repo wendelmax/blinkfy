@@ -6,6 +6,8 @@ export default function HomePage() {
             <h1>Blinkfy Hire</h1>
             <p>Recruiting workspace for building confident hiring decisions.</p>
             <Link href="/hire">Open Blinkfy Hire</Link>
+            <br />
+            <Link href="/talent">Open Blinkfy Talent</Link>
         </main>
     );
 }

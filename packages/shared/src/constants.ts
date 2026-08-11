@@ -3,6 +3,8 @@
  */
 
 export const USER_TYPES = ["candidate", "recruiter", "company", "admin"] as const;
+export const CANDIDATE_VISIBILITIES = ["private", "available", "recruiters_only", "paused"] as const;
+export type CandidateVisibility = (typeof CANDIDATE_VISIBILITIES)[number];
 
 export const AUDIT_ACTIONS = {
   clientCreated: "client.created",
@@ -16,6 +18,8 @@ export const AUDIT_ACTIONS = {
   applicationStageChanged: "application.stage_changed",
   applicationRejected: "application.rejected",
   applicationScoreOverridden: "application.score_overridden",
+  candidateTalentProfileUpdated: "candidate.talent_profile_updated",
+  candidateVisibilityChanged: "candidate.visibility_changed",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
