@@ -7,6 +7,7 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/keycloak-callback', authController.keycloakCallback);
 router.get('/me', auth, authController.getMe);
+router.post('/logout', auth, authController.logout);
 router.post('/verify-email', authController.verifyEmail);
 
 module.exports = router;
