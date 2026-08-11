@@ -6,6 +6,7 @@ const { createCandidatesRouter } = require('./candidates');
 const { createImportsRouter } = require('./imports');
 const { createApplicationsRouter } = require('./applications');
 const { createAnalyticsRouter } = require('./analytics');
+const { createTalentRouter } = require('./talent');
 
 function createBlinkfyRouter({ prisma }) {
     const router = express.Router();
@@ -17,6 +18,7 @@ function createBlinkfyRouter({ prisma }) {
     router.use('/candidates', createCandidatesRouter({ ...workspaceMiddleware, prisma }));
     router.use('/jobs/:jobId/applications', createApplicationsRouter({ ...workspaceMiddleware, prisma }));
     router.use('/clients/:clientId/analytics', createAnalyticsRouter({ ...workspaceMiddleware, prisma }));
+    router.use('/talent', createTalentRouter({ ...workspaceMiddleware, prisma }));
 
     return router;
 }
