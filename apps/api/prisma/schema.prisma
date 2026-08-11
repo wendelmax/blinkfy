@@ -29,6 +29,7 @@ model User {
   placements           Placement[] // recruiter placements (attributed to)
   walletTransactions   WalletTransaction[]
   workspaceMemberships WorkspaceMembership[]
+  talentCandidate      Candidate? @relation("CandidateTalentAccount")
 }
 
 enum UserType {
@@ -327,8 +328,18 @@ model Candidate {
   normalizedLinkedinUrl String?
   profile               Json
   sourceMetadata        Json?
-  visibility            String                 @default("private")
+  userId                String?                @unique
+  visibility            CandidateVisibility   @default(private)
+  targetRole            String?
+  headline              String?
+  bio                   String?
+  skills                String[]               @default([])
+  location              String?
+  workModel             String?
+  availability          String?
+  portfolioUrl          String?
   workspace             Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user                  User?                  @relation("CandidateTalentAccount", fields: [userId], references: [id], onDelete: SetNull)
   identities            CandidateIdentity[]
   consents              CandidateConsent[]
   applications          CandidateApplication[]
@@ -337,6 +348,15 @@ model Candidate {
 
   @@index([workspaceId])
   @@map("candidates")
+}
+
+enum CandidateVisibility {
+  private
+  available
+  recruiters_only
+  paused
+
+  @@map("candidate_visibility")
 }
 
 model CandidateIdentity {

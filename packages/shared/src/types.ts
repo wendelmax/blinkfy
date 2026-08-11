@@ -3,6 +3,23 @@
  */
 
 export type UserType = "candidate" | "recruiter" | "company" | "admin";
+export type CandidateVisibility = "private" | "available" | "recruiters_only" | "paused";
+
+export interface CandidateTalentProfile {
+  id: string;
+  userId: string;
+  fullName: string;
+  visibility: CandidateVisibility;
+  targetRole?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  skills: string[];
+  location?: string | null;
+  workModel?: string | null;
+  availability?: string | null;
+  portfolioUrl?: string | null;
+  updatedAt: string;
+}
 
 export type WorkspaceRole = "owner" | "admin" | "recruiter" | "viewer";
 
