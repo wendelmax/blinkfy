@@ -27,4 +27,4 @@ ALTER TABLE "candidates"
 CREATE UNIQUE INDEX "candidates_userId_key" ON "candidates"("userId");
 CREATE INDEX "candidates_workspaceId_userId_idx" ON "candidates"("workspaceId", "userId");
 ALTER TABLE "candidates" ADD CONSTRAINT "candidates_userId_fkey"
-  FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

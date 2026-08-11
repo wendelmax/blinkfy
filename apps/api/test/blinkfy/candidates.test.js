@@ -67,6 +67,20 @@ test('blocks cross-client sharing without active client_presentation consent', a
     expect(response.body.message).toMatch(/consent/i);
 });
 
+test('legacy recruiter candidate endpoint returns only safe identity fields', async () => {
+    const context = await createContext('redaction');
+    const imported = await importCandidates(context, candidateCsv('Sam,sam@example.com,https://linkedin.com/in/sam,Account Executive,Remote,enterprise sales,ats_export'));
+    const response = await request(app)
+        .get(`/api/blinkfy/candidates/${imported.body.candidates[0].id}`)
+        .set('Authorization', bearerToken(context.recruiter))
+        .set('x-workspace-id', context.workspace.id);
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ fullName: 'Sam', visibility: 'private' });
+    expect(response.body).not.toHaveProperty('email');
+    expect(response.body).not.toHaveProperty('linkedinUrl');
+    expect(response.body).not.toHaveProperty('profile');
+});
+
 test('records explicit client presentation consent and permits only the consented client share', async () => {
     const context = await createContext('consent');
     const otherClient = await prisma.client.create({

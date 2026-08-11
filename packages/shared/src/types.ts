@@ -3,7 +3,7 @@
  */
 
 export type UserType = "candidate" | "recruiter" | "company" | "admin";
-export type CandidateVisibility = "private" | "available" | "recruiters_only" | "paused";
+import type { CandidateVisibility } from "./constants";
 
 export interface CandidateTalentProfile {
   id: string;

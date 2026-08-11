@@ -5,9 +5,6 @@ function serializeCandidate(candidate) {
     return {
         id: candidate.id,
         fullName: candidate.fullName,
-        email: candidate.normalizedEmail,
-        linkedinUrl: candidate.normalizedLinkedinUrl,
-        profile: candidate.profile,
         visibility: candidate.visibility,
         createdAt: candidate.createdAt,
     };
