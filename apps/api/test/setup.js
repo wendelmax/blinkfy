@@ -1,4 +1,5 @@
 process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-only-jwt-secret-please-do-not-use-in-production';
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://admin:password@localhost:5432/recruitment_platform_test';
 
 let databaseName;
