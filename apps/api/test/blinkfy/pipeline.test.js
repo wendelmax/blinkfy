@@ -142,6 +142,22 @@ test('stores a reviewer reason when a score is overridden', async () => {
     expect(response.body.score.overrideReason).toContain('quota ownership');
 });
 
+test('returns and audits the fit score policy version when recomputing', async () => {
+    const context = await createContext();
+    const response = await request(app)
+        .post(`/api/blinkfy/jobs/${context.job.id}/applications/${context.application.id}/recompute-score`)
+        .set('Authorization', bearerToken(context.recruiter))
+        .set('x-workspace-id', context.workspace.id);
+
+    expect(response.status).toBe(200);
+    expect(response.body.score.policyVersion).toBe('fit-score-v1');
+    const audit = await prisma.auditEvent.findFirst({
+        where: { workspaceId: context.workspace.id, action: 'application.score_recomputed', entityId: context.application.id },
+        orderBy: { createdAt: 'desc' },
+    });
+    expect(audit.metadata).toEqual(expect.objectContaining({ policyVersion: 'fit-score-v1' }));
+});
+
 test('requires a human reviewer reason before moving an application to rejected', async () => {
     const context = await createContext();
 

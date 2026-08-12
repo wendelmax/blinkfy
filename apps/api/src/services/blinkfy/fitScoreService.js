@@ -1,5 +1,6 @@
 const factorKeys = ['skills', 'experience', 'context', 'preferences', 'signals'];
-const protectedTraitPattern = /\b(age|idade|edad|gender|genero|sexo|sex|race|raca|raza|ethnicity|etnia|nationality|nacionalidade|nacionalidad|national origin|origem nacional|disability|deficiencia|discapacidad|religion|religiao|faith|creed|pregnan\w*|gravidez|embarazo|marital status|estado civil|orientacao sexual|sexual orientation|identidade de genero|gender identity|lgbtq?\+?|transgender|transgenero|skin color|cor da pele|genetic information|informacao genetica|veteran status)\b/i;
+const FIT_SCORE_POLICY_VERSION = 'fit-score-v1';
+const protectedTraitPattern = /\b(age|idade|edad|gender|genero|género|sexo|sex|race|raca|raça|raza|ethnicity|etnia|nationality|nacionalidade|nacionalidad|national origin|origem nacional|disability|deficiencia|deficiência|discapacidad|religion|religiao|religião|faith|creed|pregnan\w*|gravidez|embarazo|marital status|estado civil|orientacao sexual|orientação sexual|sexual orientation|identidade de genero|identidade de gênero|gender identity|lgbtq?\+?|transgender|transgenero|transgênero|skin color|cor da pele|genetic information|informacao genetica|informação genética|veteran status|veterano|veterana|caste|casta|medical condition|condicao medica|condição médica|neurodiverg\w*|political affiliation|afiliacao politica|afiliação política)\b/i;
 
 function normalizedList(value) {
     return Array.isArray(value)
@@ -46,6 +47,7 @@ function computeFitScore({ job, candidate }) {
     const experienceYears = Number(profile.experienceYears);
     const availability = normalizedText(profile.availability);
     const weights = job?.scorecard || {};
+    const policyVersion = weights.policyVersion || FIT_SCORE_POLICY_VERSION;
     const gaps = [
         ...requiredSkills.filter((requirement) => !matchedSkills.includes(requirement)).map((requirement) => `${requirement} not evidenced`),
         ...requiredContext.filter((requirement) => !matchedContext.includes(requirement)).map((requirement) => `${requirement} not evidenced`),
@@ -64,7 +66,7 @@ function computeFitScore({ job, candidate }) {
         ? 'high'
         : (title && skills.length > 0 ? 'medium' : 'low');
 
-    return { score: Math.max(0, Math.min(100, score)), confidence, factors, gaps };
+    return { policyVersion, score: Math.max(0, Math.min(100, score)), confidence, factors, gaps };
 }
 
-module.exports = { computeFitScore, factorKeys };
+module.exports = { FIT_SCORE_POLICY_VERSION, computeFitScore, factorKeys, isProtectedRequirement };

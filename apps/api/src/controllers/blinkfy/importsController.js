@@ -1,4 +1,5 @@
 const { CandidateImportPersistenceError, importCandidates } = require('../../services/blinkfy/importService');
+const { logger } = require('../../lib/logger');
 
 function createImportsController({ prisma }) {
     async function importCandidatesFromCsv(req, res) {
@@ -23,7 +24,14 @@ function createImportsController({ prisma }) {
                 return res.status(422).json({ message: error.message });
             }
             if (!(error instanceof CandidateImportPersistenceError)) {
-                console.error('Candidate import failed:', error);
+                logger.error('candidate.import_failed', {
+                    requestId: req.requestId,
+                    workspaceId: req.workspace?.id,
+                    clientId: req.client?.id,
+                    actorUserId: req.user?.id,
+                    filename: req.body?.filename,
+                    error,
+                });
             }
             return res.status(500).json({ message: 'Candidate import could not be completed' });
         }

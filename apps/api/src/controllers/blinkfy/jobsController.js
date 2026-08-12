@@ -22,6 +22,7 @@ function toJobResponse(job) {
                 context: job.scorecard.context,
                 preferences: job.scorecard.preferences,
                 signals: job.scorecard.signals,
+                policyVersion: job.scorecard.policyVersion,
             },
         },
         createdAt: job.createdAt,

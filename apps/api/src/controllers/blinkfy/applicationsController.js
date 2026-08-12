@@ -24,6 +24,7 @@ function serializeScore(snapshot) {
         id: snapshot.id,
         score: snapshot.score,
         confidence: snapshot.confidence,
+        policyVersion: snapshot.policyVersion,
         factors: snapshot.factors,
         gaps: snapshot.gaps,
         computedAt: snapshot.computedAt,
@@ -123,7 +124,7 @@ function createApplicationsController({ prisma }) {
             await recordAuditEvent({
                 prisma: transaction, workspaceId: req.workspace.id, clientId: application.clientId, actorUserId: req.user.id,
                 entityType: 'candidate_application', entityId: application.id, action: 'application.score_recomputed',
-                metadata: { score: computed.score, confidence: computed.confidence },
+                metadata: { score: computed.score, confidence: computed.confidence, policyVersion: computed.policyVersion },
             });
             return created;
         });
