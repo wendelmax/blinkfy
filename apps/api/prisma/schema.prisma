@@ -480,6 +480,7 @@ model CandidateApplication {
   job            BlinkfyJob?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
   scoreSnapshots FitScoreSnapshot[]
   screeningSessions ScreeningSession[]
+  messageSuggestions MessageSuggestion[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -487,6 +488,28 @@ model CandidateApplication {
   @@index([clientId, stage])
   @@index([jobId, stage])
   @@map("candidate_applications")
+}
+
+enum MessageSuggestionStatus {
+  draft
+  approved
+  rejected
+}
+
+model MessageSuggestion {
+  id            String                  @id @default(cuid())
+  applicationId String
+  channel       String                  // linkedin | email | whatsapp
+  content       String
+  status        MessageSuggestionStatus @default(draft)
+  approvedAt    DateTime?
+  approvedById  String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  application   CandidateApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, status, createdAt])
+  @@map("message_suggestions")
 }
 
 enum ScreeningSessionStatus {

@@ -1,9 +1,11 @@
 const express = require('express');
 const { createApplicationsController } = require('../../controllers/blinkfy/applicationsController');
+const { createMessageSuggestionsController } = require('../../controllers/blinkfy/messageSuggestionsController');
 
 function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     const router = express.Router({ mergeParams: true });
     const controller = createApplicationsController({ prisma });
+    const messageSuggestions = createMessageSuggestionsController({ prisma });
     const reviewer = requireWorkspaceRole('owner', 'admin', 'recruiter');
 
     router.get('/', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.listApplications);
@@ -16,6 +18,9 @@ function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     router.post('/:applicationId/screening/withdraw', reviewer, controller.withdrawScreening);
     router.post('/:applicationId/screening/evidence', reviewer, controller.addScreeningEvidence);
     router.get('/:applicationId/screening/dossier', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.getScreeningDossier);
+    router.get('/:applicationId/messages', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), messageSuggestions.list);
+    router.post('/:applicationId/messages', reviewer, messageSuggestions.create);
+    router.patch('/:applicationId/messages/:suggestionId', reviewer, messageSuggestions.decide);
 
     return router;
 }
