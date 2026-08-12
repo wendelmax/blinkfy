@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { apiFetch, ApiError } from '../../lib/api';
-import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type ApplicationStage, type PipelineApplication } from '../../lib/types';
+import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type ApplicationStage, type PipelineApplication, type ScreeningDossier } from '../../lib/types';
 import { ConsentBadge } from './ConsentBadge';
 import { FitScoreCard } from './FitScoreCard';
 
@@ -22,6 +22,7 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
     const [rejectionTarget, setRejectionTarget] = useState<PipelineApplication | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [overrides, setOverrides] = useState<Record<string, { score: string; reason: string }>>({});
+    const [dossier, setDossier] = useState<ScreeningDossier | null>(null);
 
     useEffect(() => setItems(applications), [applications]);
 
@@ -59,6 +60,13 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
         }
     }
 
+    async function openDossier(application: PipelineApplication) {
+        setError('');
+        try {
+            setDossier(await apiFetch<ScreeningDossier>(`/api/blinkfy/jobs/${jobId}/applications/${application.id}/screening/dossier`));
+        } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'The screening dossier could not be loaded.'); }
+    }
+
     return (
         <section>
             <h2>Reviewed pipeline</h2>
@@ -79,6 +87,7 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                                         <strong>{application.fullName}</strong>
                                         {application.currentTitle && <p>{application.currentTitle}</p>}
                                         <ConsentBadge consentRecorded={application.consentRecorded} />
+                                        <button type="button" onClick={() => openDossier(application)}>Review screening dossier</button>
                                         {application.score ? <FitScoreCard score={application.score} /> : <p>Score not yet computed.</p>}
                                         {targetStage && <button type="button" onClick={() => updateStage(application, targetStage)}>Move to {stageLabel(targetStage)}</button>}
                                         {stage !== 'rejected' && stage !== 'shortlisted' && <button type="button" onClick={() => setRejectionTarget(application)}>Reject with reason</button>}
@@ -113,6 +122,14 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                     </form>
                 </div>
             )}
+            {dossier && <div role="dialog" aria-modal="true" aria-labelledby="dossier-title" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'grid', placeItems: 'center' }}>
+                <section style={{ background: '#fff', padding: 24, maxWidth: 720, maxHeight: '80vh', overflow: 'auto' }}>
+                    <h2 id="dossier-title">Screening dossier: {dossier.application.fullName}</h2>
+                    <p>Session: {dossier.session.status} · Consent version: {dossier.session.consentVersion ?? 'not specified'}</p>
+                    {dossier.evidences.length === 0 ? <p>No screening evidence recorded yet.</p> : dossier.evidences.map((evidence) => <article key={evidence.id}><h3>{evidence.kind}</h3>{evidence.confidence != null && <p>Confidence: {evidence.confidence}%</p>} {evidence.uri && <p><a href={evidence.uri}>Open evidence</a></p>} {evidence.content && <p>{evidence.content}</p>}</article>)}
+                    <button type="button" onClick={() => setDossier(null)}>Close dossier</button>
+                </section>
+            </div>}
         </section>
     );
 }

@@ -37,6 +37,13 @@ export interface PipelineApplication {
     score?: FitScore | null;
 }
 
+export interface ScreeningDossier {
+    application: PipelineApplication;
+    session: { id: string; status: string; consentedAt: string; consentVersion?: string | null; scheduledAt?: string | null; completedAt?: string | null };
+    evidences: Array<{ id: string; kind: 'recording' | 'transcript' | 'insight'; uri?: string | null; content?: string | null; confidence?: number | null }>;
+    score?: FitScore | null;
+}
+
 export interface CandidateImportResult {
     import: { id: string };
     created: number;
