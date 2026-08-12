@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from '../../lib/api';
 import { APPLICATION_STAGES, NEXT_APPLICATION_STAGE, type ApplicationStage, type PipelineApplication, type ScreeningDossier } from '../../lib/types';
 import { ConsentBadge } from './ConsentBadge';
 import { FitScoreCard } from './FitScoreCard';
+import { MessageSuggestions } from './MessageSuggestions';
 
 type PipelineBoardProps = {
     jobId: string;
@@ -87,6 +88,7 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                                         <strong>{application.fullName}</strong>
                                         {application.currentTitle && <p>{application.currentTitle}</p>}
                                         <ConsentBadge consentRecorded={application.consentRecorded} />
+                                        <MessageSuggestions jobId={jobId} applicationId={application.id} candidateName={application.fullName} />
                                         <button type="button" onClick={() => openDossier(application)}>Review screening dossier</button>
                                         {application.score ? <FitScoreCard score={application.score} /> : <p>Score not yet computed.</p>}
                                         {targetStage && <button type="button" onClick={() => updateStage(application, targetStage)}>Move to {stageLabel(targetStage)}</button>}
