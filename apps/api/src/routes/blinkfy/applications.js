@@ -14,6 +14,8 @@ function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     router.post('/:applicationId/screening/consent', reviewer, controller.consentScreening);
     router.post('/:applicationId/screening/schedule', reviewer, controller.scheduleScreening);
     router.post('/:applicationId/screening/withdraw', reviewer, controller.withdrawScreening);
+    router.post('/:applicationId/screening/evidence', reviewer, controller.addScreeningEvidence);
+    router.get('/:applicationId/screening/dossier', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.getScreeningDossier);
 
     return router;
 }

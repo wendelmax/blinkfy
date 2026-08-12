@@ -1,6 +1,7 @@
 const { computeFitScore } = require('../../services/blinkfy/fitScoreService');
 const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { transitionScreeningSession } = require('../../services/blinkfy/screeningSessionService');
+const { validateEvidenceInput, findLatestDossierSession } = require('../../services/blinkfy/screeningDossierService');
 
 const allowedTransitions = {
     mapped: ['reviewed'],
@@ -120,6 +121,31 @@ function createApplicationsController({ prisma }) {
     const consentScreening = (req, res) => screeningAction(req, res, 'consent');
     const scheduleScreening = (req, res) => screeningAction(req, res, 'schedule');
     const withdrawScreening = (req, res) => screeningAction(req, res, 'withdraw');
+    async function addScreeningEvidence(req, res) {
+        const application = await findApplication({ prisma, workspaceId: req.workspace.id, jobId: req.params.jobId, applicationId: req.params.applicationId });
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        let input;
+        try { input = validateEvidenceInput(req.body); } catch (error) { return res.status(422).json({ message: error.message }); }
+        const session = await prisma.screeningSession.findFirst({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } });
+        if (!session || session.status === 'withdrawn') return res.status(404).json({ message: 'Eligible screening session not found' });
+        if (!session.consentedAt || !['consented', 'scheduled', 'in_progress', 'completed'].includes(session.status)) return res.status(403).json({ message: 'Screening consent required' });
+        const evidence = await prisma.$transaction(async (transaction) => {
+            const locked = await transaction.screeningSession.findUnique({ where: { id: session.id } });
+            if (!locked?.consentedAt || locked.status === 'withdrawn') throw new Error('Screening consent required');
+            const created = await transaction.screeningEvidence.create({ data: { sessionId: locked.id, ...input } });
+            await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, clientId: application.clientId, actorUserId: req.user.id, entityType: 'screening_evidence', entityId: created.id, action: 'screening.evidence_added', metadata: { sessionId: locked.id, kind: created.kind } });
+            return created;
+        });
+        return res.status(201).json({ evidence });
+    }
+    async function getScreeningDossier(req, res) {
+        const application = await findApplication({ prisma, workspaceId: req.workspace.id, jobId: req.params.jobId, applicationId: req.params.applicationId });
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        const session = await findLatestDossierSession({ prisma, applicationId: application.id });
+        if (!session) return res.status(404).json({ message: 'Screening dossier not found' });
+        if (!session.consentedAt) return res.status(403).json({ message: 'Screening consent required' });
+        return res.json({ application: serializeApplication(application), session: { id: session.id, status: session.status, consentedAt: session.consentedAt, consentVersion: session.consentVersion, scheduledAt: session.scheduledAt, startedAt: session.startedAt, completedAt: session.completedAt }, evidences: session.evidences, score: serializeScore(application.scoreSnapshots?.[0]) });
+    }
     async function listApplications(req, res) {
         const job = await prisma.blinkfyJob.findFirst({
             where: { id: req.params.jobId, client: { workspaceId: req.workspace.id } },
@@ -223,7 +249,7 @@ function createApplicationsController({ prisma }) {
         return res.json({ application: serializeApplication({ ...application, scoreSnapshot: snapshot }), score: serializeScore(snapshot) });
     }
 
-    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, withdrawScreening };
+    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier };
 }
 
 module.exports = { createApplicationsController, allowedTransitions, serializeApplication };
