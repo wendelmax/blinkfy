@@ -5,6 +5,7 @@ dotenv.config();
 const { validateEnv } = require('./lib/env');
 const tasklets = require('./lib/tasklets');
 const { createApp } = require('./app');
+const { logger } = require('./lib/logger');
 const { disconnectPrisma } = require('./lib/prisma');
 
 validateEnv();
@@ -25,12 +26,12 @@ async function gracefulShutdown(signal) {
             console.log('Cleanup complete');
             process.exit(0);
         } catch (error) {
-            console.error('Shutdown error:', error);
+            logger.error('api.shutdown_failed', { error });
             process.exit(1);
         }
     });
     setTimeout(() => {
-        console.error('Forced shutdown after timeout');
+        logger.error('api.shutdown_timeout');
         process.exit(1);
     }, 10000);
 }

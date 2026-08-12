@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const { getPrisma } = require('./lib/prisma');
+const { logger } = require('./lib/logger');
+const { requestContext } = require('./middleware/requestContext');
 
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
@@ -15,6 +17,8 @@ const { createBlinkfyRouter } = require('./routes/blinkfy');
 function createApp({ prisma = getPrisma() } = {}) {
     const app = express();
     const isProd = process.env.NODE_ENV === 'production';
+
+    app.use(requestContext);
 
     app.use(helmet({ contentSecurityPolicy: isProd }));
     app.use(compression());
@@ -58,17 +62,18 @@ function createApp({ prisma = getPrisma() } = {}) {
         });
     });
 
-    app.get('/ready', async (_req, res) => {
+    app.get('/ready', async (req, res) => {
         try {
             await prisma.$queryRaw`SELECT 1`;
             res.status(200).json({ ready: true });
         } catch (error) {
+            logger.error('api.readiness_failed', { requestId: req.requestId, error });
             res.status(503).json({ ready: false, error: error.message });
         }
     });
 
     app.use((err, _req, res, _next) => {
-        console.error('Unhandled error:', err);
+        logger.error('api.unhandled_error', { requestId: _req.requestId, method: _req.method, path: _req.originalUrl, error: err });
         res.status(500).json({ message: isProd ? 'Internal server error' : err.message });
     });
 
