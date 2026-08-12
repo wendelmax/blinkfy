@@ -39,10 +39,12 @@ describe('operational notification dispatcher', () => {
 
     it('supports approved email delivery and rejects unsupported channels', async () => {
         const deliverEmail = vi.fn().mockResolvedValue({ sent: true });
-        const dispatcher = createNotificationDispatcher({ deliverEmail });
+        const audit = vi.fn().mockResolvedValue(undefined);
+        const dispatcher = createNotificationDispatcher({ deliverEmail, audit });
         await expect(dispatcher.dispatch({ event, channel: 'email', target: 'ops@example.test', approved: true }))
             .resolves.toMatchObject({ status: 'delivered', channel: 'email' });
         expect(deliverEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'ops@example.test', event }));
+        expect(audit).toHaveBeenCalledWith(expect.objectContaining({ action: 'notification.delivered' }));
 
         await expect(dispatcher.dispatch({ event, channel: 'sms', target: '+5511', approved: true }))
             .rejects.toThrow('Unsupported notification channel');
