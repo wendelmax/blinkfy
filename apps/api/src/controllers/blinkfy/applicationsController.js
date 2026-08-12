@@ -1,5 +1,6 @@
 const { computeFitScore } = require('../../services/blinkfy/fitScoreService');
 const { recordAuditEvent } = require('../../services/blinkfy/auditService');
+const { transitionScreeningSession } = require('../../services/blinkfy/screeningSessionService');
 
 const allowedTransitions = {
     mapped: ['reviewed'],
@@ -87,6 +88,38 @@ function parseScoreOverride(body) {
 }
 
 function createApplicationsController({ prisma }) {
+    async function getScreeningApplication(req) {
+        return prisma.candidateApplication.findFirst({
+            where: { id: req.params.applicationId, jobId: req.params.jobId, candidate: { workspaceId: req.workspace.id }, job: { client: { workspaceId: req.workspace.id } } },
+        });
+    }
+
+    async function screeningAction(req, res, action) {
+        const application = await getScreeningApplication(req);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        const existing = await prisma.screeningSession.findFirst({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } });
+        if (action === 'invite') {
+            if (existing && existing.status !== 'withdrawn') return res.status(200).json({ session: existing });
+            const session = await prisma.screeningSession.create({ data: { applicationId: application.id } });
+            await recordAuditEvent({ prisma, workspaceId: req.workspace.id, clientId: application.clientId, actorUserId: req.user.id, entityType: 'screening_session', entityId: session.id, action: 'screening.invited', metadata: {} });
+            return res.status(201).json({ session });
+        }
+        if (!existing) return res.status(404).json({ message: 'Screening session not found' });
+        let nextStatus;
+        let data = {};
+        if (action === 'consent') { nextStatus = 'consented'; data = { consentedAt: new Date(), consentVersion: req.body?.consentVersion || 'v1' }; }
+        if (action === 'schedule') { nextStatus = 'scheduled'; data = { scheduledAt: new Date(req.body?.scheduledAt || Date.now()) }; }
+        if (action === 'withdraw') { nextStatus = 'withdrawn'; data = { withdrawnAt: new Date() }; }
+        try { transitionScreeningSession(existing, nextStatus); } catch (error) { return res.status(422).json({ message: error.message }); }
+        const session = await prisma.screeningSession.update({ where: { id: existing.id }, data: { ...data, status: nextStatus } });
+        await recordAuditEvent({ prisma, workspaceId: req.workspace.id, clientId: application.clientId, actorUserId: req.user.id, entityType: 'screening_session', entityId: session.id, action: `screening.${action}`, metadata: { status: nextStatus } });
+        return res.json({ session });
+    }
+
+    const inviteScreening = (req, res) => screeningAction(req, res, 'invite');
+    const consentScreening = (req, res) => screeningAction(req, res, 'consent');
+    const scheduleScreening = (req, res) => screeningAction(req, res, 'schedule');
+    const withdrawScreening = (req, res) => screeningAction(req, res, 'withdraw');
     async function listApplications(req, res) {
         const job = await prisma.blinkfyJob.findFirst({
             where: { id: req.params.jobId, client: { workspaceId: req.workspace.id } },
@@ -190,7 +223,7 @@ function createApplicationsController({ prisma }) {
         return res.json({ application: serializeApplication({ ...application, scoreSnapshot: snapshot }), score: serializeScore(snapshot) });
     }
 
-    return { listApplications, recomputeScore, updateStage, overrideScore };
+    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, withdrawScreening };
 }
 
 module.exports = { createApplicationsController, allowedTransitions, serializeApplication };
