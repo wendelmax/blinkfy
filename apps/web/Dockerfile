@@ -1,7 +1,9 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-COPY packages/shared/package.json ./packages/shared/package.json
+# The shared package has a prepare hook which runs during npm ci in this
+# workspace. Include its source before installation so that hook can compile.
+COPY packages/shared ./packages/shared
 COPY apps/web/package.json ./apps/web/package.json
 # The shared workspace has a prepare hook that compiles TypeScript. At this
 # dependency-only stage its source is intentionally not copied yet, so defer
