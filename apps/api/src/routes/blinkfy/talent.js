@@ -10,6 +10,7 @@ function createTalentRouter({ requireWorkspaceRole, prisma }) {
         return next();
     }];
     router.get('/profile', candidateAccess, controller.getProfile);
+    router.get('/analytics/positioning', candidateAccess, controller.getPositioningAnalytics);
     router.patch('/profile', candidateAccess, controller.patchProfile);
     router.patch('/visibility', candidateAccess, controller.patchVisibility);
     router.get('/consents', candidateAccess, controller.listConsents);

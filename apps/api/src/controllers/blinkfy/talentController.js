@@ -4,6 +4,7 @@ const {
     setCandidateVisibility,
 } = require('../../services/blinkfy/talentProfileService');
 const { recordAuditEvent } = require('../../services/blinkfy/auditService');
+const { getCandidatePositioningAnalytics } = require('../../services/blinkfy/talentPositioningService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -16,6 +17,14 @@ function createTalentController({ prisma }) {
         const profile = await getCandidateProfile({ prisma, workspaceId: req.workspace.id, userId: req.user.id });
         if (!profile) return res.status(404).json({ message: 'Candidate profile not found' });
         return res.json(profile);
+    }
+
+    async function getPositioningAnalytics(req, res) {
+        const analytics = await getCandidatePositioningAnalytics({
+            prisma, workspaceId: req.workspace.id, userId: req.user.id,
+        });
+        if (!analytics) return res.status(404).json({ message: 'Candidate profile not found' });
+        return res.json(analytics);
     }
 
     async function patchProfile(req, res) {
@@ -98,7 +107,7 @@ function createTalentController({ prisma }) {
         return res.json({ id: updated.id, status: 'revoked', revokedAt: updated.revokedAt });
     }
 
-    return { getProfile, patchProfile, patchVisibility, listConsents, revokeConsent };
+    return { getProfile, getPositioningAnalytics, patchProfile, patchVisibility, listConsents, revokeConsent };
 }
 
 module.exports = { createTalentController };
