@@ -13,6 +13,7 @@ RUN npm ci --include=dev --ignore-scripts
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY . .
 RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=apps/web
