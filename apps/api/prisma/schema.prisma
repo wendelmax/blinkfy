@@ -464,9 +464,32 @@ model ScreeningSession {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   application     CandidateApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  evidences       ScreeningEvidence[]
 
   @@index([applicationId, status])
   @@map("screening_sessions")
+}
+
+enum ScreeningEvidenceKind {
+  recording
+  transcript
+  insight
+}
+
+model ScreeningEvidence {
+  id               String               @id @default(cuid())
+  sessionId        String
+  kind             ScreeningEvidenceKind
+  uri              String?
+  content          String?
+  confidence       Int?
+  retentionUntil   DateTime?
+  createdAt        DateTime             @default(now())
+  session          ScreeningSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, kind])
+  @@index([retentionUntil])
+  @@map("screening_evidences")
 }
 
 enum ApplicationStage {
