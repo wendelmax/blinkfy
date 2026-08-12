@@ -432,6 +432,7 @@ model CandidateApplication {
   client         Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
   job            BlinkfyJob?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
   scoreSnapshots FitScoreSnapshot[]
+  screeningSessions ScreeningSession[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -439,6 +440,33 @@ model CandidateApplication {
   @@index([clientId, stage])
   @@index([jobId, stage])
   @@map("candidate_applications")
+}
+
+enum ScreeningSessionStatus {
+  invited
+  consented
+  scheduled
+  in_progress
+  completed
+  withdrawn
+}
+
+model ScreeningSession {
+  id              String                 @id @default(cuid())
+  applicationId   String
+  status          ScreeningSessionStatus @default(invited)
+  consentedAt     DateTime?
+  consentVersion  String?
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  withdrawnAt     DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  application     CandidateApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, status])
+  @@map("screening_sessions")
 }
 
 enum ApplicationStage {
