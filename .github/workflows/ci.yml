@@ -31,7 +31,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+      - run: npm exec --workspace=apps/api -- prisma migrate deploy --schema prisma/schema.prisma
       - run: npm run test --workspace=apps/api
       - run: npm run test --workspace=apps/web
       - run: npm run build --workspace=apps/web
