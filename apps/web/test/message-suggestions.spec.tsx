@@ -9,6 +9,6 @@ describe('MessageSuggestions', () => {
     it('creates and approves a human-reviewed draft', async () => {
         const markup = renderToStaticMarkup(<MessageSuggestions jobId="j1" applicationId="a1" candidateName="Ada" />);
         expect(markup).toContain('Review message drafts');
-        expect(markup).toContain('Drafts never send automatically');
+        expect(markup).toContain('Message suggestions for Ada');
     });
 });
