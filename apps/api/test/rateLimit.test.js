@@ -15,6 +15,6 @@ describe('authentication rate limit', () => {
 
         expect(blocked.status).toBe(429);
         expect(blocked.body).toEqual({ message: 'Too many authentication attempts. Try again later.' });
-        expect(blocked.headers['ratelimit']).toBeDefined();
+        expect(blocked.headers['ratelimit-limit']).toBeDefined();
     });
 });
