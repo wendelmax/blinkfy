@@ -8,8 +8,8 @@ COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 
 # Install and build shared
-RUN npm install --omit=dev 2>/dev/null || npm ci --omit=dev
-RUN cd packages/shared && npm run build 2>/dev/null || true
+RUN npm ci
+RUN cd packages/shared && npm run build
 
 WORKDIR /app/apps/api
 RUN npx prisma generate
