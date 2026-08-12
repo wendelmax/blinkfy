@@ -26,6 +26,16 @@ A plataforma atua como uma ponte inteligente entre:
 
 ## 📂 Estrutura da Documentação
 
+### M1 Demo Pilot (dados sintéticos)
+
+Para validar o fluxo Hire e popular analytics sem misturar dados reais, execute:
+
+```bash
+npm run seed --workspace=apps/api
+```
+
+O seed é idempotente e cria 5 empresas, 5 recrutadores, 5 vagas, 15 candidatos, consentimentos ativos/revogados, candidaturas em etapas distintas, Fit Scores e auditoria. Todos os registros usam a origem `m1-demo-pilot` e devem ser tratados como demonstração/QA; eles não contam como operações reais para fechar o piloto de mercado da issue #28.
+
 - **`docs/infrastructure-and-setup.md`:** Infraestrutura completa — Docker, Nginx como API gateway (porta 80), Keycloak (SSO, self-registration, verificação de e-mail), variáveis de ambiente e checklist de produção.
 - **`docs/recruitment-system-full-spec.md`:** Especificação completa do fluxo (recrutamento → seleção → assinatura → gestão de candidatos), com segurança e valor para empresas e candidatos.
 - **`docs/journeys-and-interactions.md`:** Jornadas e interações de todos os atores (candidato, recrutador, empresa), APIs reais e infra para versão de lançamento (sem mocks).
