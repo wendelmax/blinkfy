@@ -8,7 +8,7 @@ COPY apps/web/package.json ./apps/web/package.json
 # The shared workspace has a prepare hook that compiles TypeScript. At this
 # dependency-only stage its source is intentionally not copied yet, so defer
 # lifecycle scripts until the builder stage.
-RUN npm ci --ignore-scripts
+RUN npm ci --include=dev --ignore-scripts
 
 FROM node:20-alpine AS builder
 WORKDIR /app
