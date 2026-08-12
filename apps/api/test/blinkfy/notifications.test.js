@@ -43,7 +43,11 @@ describe('operational notification dispatcher', () => {
         const dispatcher = createNotificationDispatcher({ deliverEmail, audit });
         await expect(dispatcher.dispatch({ event, channel: 'email', target: 'ops@example.test', approved: true }))
             .resolves.toMatchObject({ status: 'delivered', channel: 'email' });
-        expect(deliverEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'ops@example.test', event }));
+        expect(deliverEmail).toHaveBeenCalledWith(expect.objectContaining({
+            to: 'ops@example.test',
+            subject: 'Blinkfy: screening.completed',
+            text: JSON.stringify(event),
+        }));
         expect(audit).toHaveBeenCalledWith(expect.objectContaining({ action: 'notification.delivered' }));
 
         await expect(dispatcher.dispatch({ event, channel: 'sms', target: '+5511', approved: true }))
