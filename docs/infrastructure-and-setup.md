@@ -57,7 +57,7 @@ Este documento descreve em detalhes a arquitetura Docker, Nginx e Keycloak da pl
 ### postgres
 
 - **Imagem:** `postgres:15-alpine`
-- **Banco principal:** `newone` (aplicação)
+- **Banco principal:** `blinkfy` (aplicação)
 - **Banco Keycloak:** `keycloak` (criado via `docker/postgres-init.sql`)
 - **Credenciais:** `admin` / `password`
 - **Porta:** 5432 (exposta para debug)
@@ -141,7 +141,7 @@ O callback da aplicação é `http://localhost/callback`.
 
 | Variável | Obrigatório | Descrição |
 |----------|-------------|-----------|
-| `DATABASE_URL` | ✓ | `postgresql://admin:password@postgres:5432/newone` |
+| `DATABASE_URL` | ✓ | `postgresql://admin:password@postgres:5432/blinkfy` |
 | `JWT_SECRET` | ✓ (prod) | Mínimo 32 caracteres |
 | `FRONTEND_URL` | ✓ | Ex.: `http://localhost` ou `https://app.exemplo.com` |
 | `KEYCLOAK_URL` | (interno) | `http://keycloak:8080` (usado pelo API para trocar code) |

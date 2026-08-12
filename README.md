@@ -1,6 +1,8 @@
-# Recruitment Platform
+# Blinkfy
 
-Plataforma de recrutamento e seleção de desenvolvedores para empresas do exterior. Conecta talentos globais a oportunidades internacionais, com suporte a compliance, pagamentos e avaliação técnica automatizada.
+Plataforma de Talent RevOps que conecta candidatos, recrutadores e empresas em um fluxo único de descoberta, qualificação e contratação.
+
+O Blinkfy reúne quatro superfícies de produto: Blinkfy Hire (sourcing e pipeline), Blinkfy Talent (carreira do candidato), Blinkfy Screen (triagem consentida) e Blinkfy Concierge (operação assistida).
 
 ## Overview
 
@@ -174,6 +176,7 @@ pm2 start ecosystem.config.cjs
 | [docs/recruitment-system-full-spec.md](docs/recruitment-system-full-spec.md) | Especificação do fluxo de recrutamento |
 | [docs/journeys-and-interactions.md](docs/journeys-and-interactions.md) | Jornadas de usuários |
 | [docs/blinkfy-hire-pilot.md](docs/blinkfy-hire-pilot.md) | Runbook do piloto Blinkfy Hire |
+| [docs/blinkfy-product-overview.md](docs/blinkfy-product-overview.md) | Visão de produto e posicionamento Blinkfy |
 
 ## Contribuindo
 
