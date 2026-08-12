@@ -344,11 +344,42 @@ model Candidate {
   identities            CandidateIdentity[]
   consents              CandidateConsent[]
   applications          CandidateApplication[]
+  subscription          CandidateSubscription?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
   @@index([workspaceId])
   @@map("candidates")
+}
+
+enum CandidatePlan {
+  free
+  pro
+}
+
+enum CandidateSubscriptionStatus {
+  active
+  trialing
+  past_due
+  canceled
+  expired
+}
+
+model CandidateSubscription {
+  id                    String                     @id @default(cuid())
+  candidateId           String                     @unique
+  plan                  CandidatePlan              @default(free)
+  status                CandidateSubscriptionStatus @default(active)
+  provider              String?
+  providerCustomerId    String?
+  providerSubscriptionId String?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  candidate             Candidate                  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_subscriptions")
 }
 
 enum CandidateVisibility {
