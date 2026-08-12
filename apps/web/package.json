@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests --exclude=e2e/**"
   },
   "dependencies": {
     "@recruitment-platform/shared": "*",

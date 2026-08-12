@@ -69,7 +69,7 @@ export default function HirePage() {
                 </form>
             </section>
             <nav aria-label="Hire workspace" style={{ display: 'flex', gap: 12, margin: '20px 0' }}>
-                <Link href="/hire/jobs/new">Create job</Link>
+                <Link href={clientId ? `/hire/jobs/new?clientId=${encodeURIComponent(clientId)}` : '/hire/jobs/new'}>Create job</Link>
                 <Link href="/hire/candidates/import">Import candidates</Link>
                 <Link href="/hire/analytics">Pipeline analytics</Link>
             </nav>
