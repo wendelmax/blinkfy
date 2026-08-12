@@ -1,4 +1,4 @@
-const { computeFitScore } = require('../../src/services/blinkfy/fitScoreService');
+const { FIT_SCORE_POLICY_VERSION, computeFitScore, isProtectedRequirement } = require('../../src/services/blinkfy/fitScoreService');
 
 const fixtureJob = {
     title: 'Account Executive',
@@ -31,6 +31,15 @@ test('returns documented factor evidence, gaps and medium confidence for a parti
     ]));
     expect(result.gaps).toContain('fintech context not evidenced');
     expect(result.confidence).toBe('medium');
+    expect(result.policyVersion).toBe(FIT_SCORE_POLICY_VERSION);
+});
+
+test('uses and returns the scorecard policy version so snapshots remain reproducible', () => {
+    const result = computeFitScore({
+        job: { ...fixtureJob, scorecard: { ...fixtureJob.scorecard, policyVersion: 'fit-score-v2' } },
+        candidate: fixtureCandidate,
+    });
+    expect(result.policyVersion).toBe('fit-score-v2');
 });
 
 test('is deterministic and does not expose protected traits as score factors', () => {
@@ -41,6 +50,12 @@ test('is deterministic and does not expose protected traits as score factors', (
     expect(first.factors.map((factor) => factor.key)).not.toEqual(expect.arrayContaining([
         'age', 'gender', 'race', 'ethnicity', 'nationality', 'disability', 'religion',
     ]));
+});
+
+test('rejects expanded protected and sensitive terms before they reach scoring', () => {
+    for (const requirement of ['veteran status', 'caste', 'medical condition', 'neurodivergence', 'political affiliation', 'raça']) {
+        expect(isProtectedRequirement(requirement)).toBe(true);
+    }
 });
 
 test('ignores protected-trait requirements even when they are present in malformed job data', () => {
