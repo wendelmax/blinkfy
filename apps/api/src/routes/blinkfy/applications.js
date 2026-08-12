@@ -10,6 +10,10 @@ function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     router.post('/:applicationId/recompute-score', reviewer, controller.recomputeScore);
     router.patch('/:applicationId/stage', reviewer, controller.updateStage);
     router.patch('/:applicationId/override-score', reviewer, controller.overrideScore);
+    router.post('/:applicationId/screening/invite', reviewer, controller.inviteScreening);
+    router.post('/:applicationId/screening/consent', reviewer, controller.consentScreening);
+    router.post('/:applicationId/screening/schedule', reviewer, controller.scheduleScreening);
+    router.post('/:applicationId/screening/withdraw', reviewer, controller.withdrawScreening);
 
     return router;
 }
