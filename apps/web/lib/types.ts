@@ -13,6 +13,25 @@ export interface TalentConsentSummary {
     createdAt: string;
 }
 
+export interface TalentPositioningAnalytics {
+    profileCompleteness: {
+        completed: number;
+        total: number;
+        percentage: number;
+        missing: string[];
+    };
+    visibility: CandidateVisibility;
+    activeConsentCount: number;
+    discoverability: 'enabled' | 'disabled';
+    nextActions: string[];
+}
+
+export interface TalentDraft {
+    requiresApproval: true;
+    published: false;
+    [key: string]: unknown;
+}
+
 export type FitScore = SharedFitScore;
 
 export interface BlinkfyJob {

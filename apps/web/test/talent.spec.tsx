@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { TalentProfileForm } from '../components/talent/TalentProfileForm';
 import { VisibilityControl } from '../components/talent/VisibilityControl';
 import { ConsentCenter } from '../components/talent/ConsentCenter';
+import { CandidateGrowthPanel } from '../components/talent/CandidateGrowthPanel';
 
 const profile = {
     id: 'candidate-1', userId: 'user-1', fullName: 'Ada Lovelace', visibility: 'private' as const,
@@ -40,5 +41,17 @@ describe('Blinkfy Talent workspace', () => {
 
     it('renders an explicit empty consent state', () => {
         expect(renderToStaticMarkup(<ConsentCenter initialItems={[]} />)).toContain('No presentation consents yet');
+    });
+
+    it('makes candidate growth tools draft-only and shows positioning analytics', () => {
+        const markup = renderToStaticMarkup(<CandidateGrowthPanel analytics={{
+            profileCompleteness: { completed: 6, total: 8, percentage: 75, missing: ['bio', 'portfolioUrl'] },
+            visibility: 'available', activeConsentCount: 2, discoverability: 'enabled', nextActions: ['complete_bio'],
+        }} />);
+        expect(markup).toContain('Candidate growth');
+        expect(markup).toContain('75% complete');
+        expect(markup).toContain('Create resume draft');
+        expect(markup).toContain('Create engagement draft');
+        expect(markup).toContain('requires your approval');
     });
 });
