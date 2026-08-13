@@ -126,7 +126,7 @@ function createTalentController({ prisma }) {
     async function listScreeningInvitations(req, res) {
         const candidate = await resolveCandidate(req);
         if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
-        const sessions = await prisma.screeningSession.findMany({ where: { application: { candidateId: candidate.id }, status: 'invited' }, include: { application: { include: { job: { select: { id: true, title: true, client: { select: { id: true, name: true } } } } } } }, orderBy: { createdAt: 'desc' } });
+        const sessions = await prisma.screeningSession.findMany({ where: { application: { candidateId: candidate.id }, status: { in: ['invited', 'consented', 'scheduled', 'in_progress'] } }, include: { application: { include: { job: { select: { id: true, title: true, client: { select: { id: true, name: true } } } } } } }, orderBy: { createdAt: 'desc' } });
         return res.json({ items: sessions.map((session) => ({ id: session.id, applicationId: session.applicationId, status: session.status, createdAt: session.createdAt, job: session.application.job })) });
     }
     async function consentToScreening(req, res) {
@@ -144,7 +144,21 @@ function createTalentController({ prisma }) {
         return res.json({ session: updated });
     }
 
-    return { getProfile, getPositioningAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening };
+    async function withdrawScreeningConsent(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        const session = await prisma.screeningSession.findFirst({ where: { id: req.params.sessionId, application: { candidateId: candidate.id } } });
+        if (!session) return res.status(404).json({ message: 'Screening invitation not found' });
+        try { transitionScreeningSession(session, 'withdrawn'); } catch (error) { return res.status(422).json({ message: error.message }); }
+        const updated = await prisma.$transaction(async (transaction) => {
+            const saved = await transaction.screeningSession.update({ where: { id: session.id }, data: { status: 'withdrawn', withdrawnAt: new Date() } });
+            await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, actorUserId: req.user.id, entityType: 'screening_session', entityId: saved.id, action: 'screening.candidate_consent_withdrawn', metadata: { applicationId: saved.applicationId } });
+            return saved;
+        });
+        return res.json({ session: updated });
+    }
+
+    return { getProfile, getPositioningAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
 }
 
 module.exports = { createTalentController };

@@ -15,6 +15,7 @@ function createTalentRouter({ requireWorkspaceRole, prisma }) {
     router.post('/drafts/engagement', candidateAccess, controller.createEngagementDraft);
     router.get('/screening/invitations', candidateAccess, controller.listScreeningInvitations);
     router.post('/screening/invitations/:sessionId/consent', candidateAccess, controller.consentToScreening);
+    router.post('/screening/invitations/:sessionId/withdraw', candidateAccess, controller.withdrawScreeningConsent);
     router.patch('/profile', candidateAccess, controller.patchProfile);
     router.patch('/visibility', candidateAccess, controller.patchVisibility);
     router.get('/consents', candidateAccess, controller.listConsents);
