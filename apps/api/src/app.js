@@ -13,6 +13,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const candidateRoutes = require('./routes/candidate');
 const paymentRoutes = require('./routes/payment');
 const { createBlinkfyRouter } = require('./routes/blinkfy');
+const { createScreeningProviderWebhookRouter } = require('./routes/screeningProviderWebhook');
 
 function createApp({ prisma = getPrisma() } = {}) {
     const app = express();
@@ -43,6 +44,7 @@ function createApp({ prisma = getPrisma() } = {}) {
     app.use('/api/metadata', require('./routes/metadata'));
     app.use('/api/company', require('./routes/company'));
     app.use('/api/blinkfy', createBlinkfyRouter({ prisma }));
+    app.use('/api/webhooks/screening', createScreeningProviderWebhookRouter({ prisma }));
 
     app.get('/health', async (_req, res) => {
         let dbStatus = 'unknown';
