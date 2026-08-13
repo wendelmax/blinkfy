@@ -3,6 +3,7 @@ const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { transitionScreeningSession } = require('../../services/blinkfy/screeningSessionService');
 const { validateEvidenceInput, findLatestDossierSession } = require('../../services/blinkfy/screeningDossierService');
 const { summarizeScreening } = require('../../services/blinkfy/screeningSummaryService');
+const { validateRecruiterFeedback } = require('../../services/blinkfy/conciergeFeedbackService');
 
 const allowedTransitions = {
     mapped: ['reviewed'],
@@ -148,6 +149,26 @@ function createApplicationsController({ prisma }) {
         const score = application.scoreSnapshots?.[0] || null;
         return res.json({ application: serializeApplication(application), session: { id: session.id, status: session.status, consentedAt: session.consentedAt, consentVersion: session.consentVersion, scheduledAt: session.scheduledAt, startedAt: session.startedAt, completedAt: session.completedAt }, evidences: session.evidences, score: serializeScore(score), summary: summarizeScreening({ session, evidences: session.evidences, score }) });
     }
+    async function listScreeningFeedback(req, res) {
+        const application = await getScreeningApplication(req);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        const items = await prisma.screeningFeedback.findMany({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } });
+        return res.json({ items });
+    }
+    async function createScreeningFeedback(req, res) {
+        const application = await getScreeningApplication(req);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        const session = await prisma.screeningSession.findFirst({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } });
+        if (!session?.consentedAt) return res.status(403).json({ message: 'Screening consent required' });
+        let input;
+        try { input = validateRecruiterFeedback(req.body); } catch (error) { return res.status(422).json({ message: error.message }); }
+        const feedback = await prisma.$transaction(async (transaction) => {
+            const created = await transaction.screeningFeedback.create({ data: { applicationId: application.id, reviewerId: req.user.id, ...input } });
+            await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, clientId: application.clientId, actorUserId: req.user.id, entityType: 'screening_feedback', entityId: created.id, action: 'screening.feedback_created', metadata: { status: created.status, requiresHumanReview: created.status === 'needs_review' } });
+            return created;
+        });
+        return res.status(201).json({ feedback });
+    }
     async function listApplications(req, res) {
         const job = await prisma.blinkfyJob.findFirst({
             where: { id: req.params.jobId, client: { workspaceId: req.workspace.id } },
@@ -251,7 +272,7 @@ function createApplicationsController({ prisma }) {
         return res.json({ application: serializeApplication({ ...application, scoreSnapshot: snapshot }), score: serializeScore(snapshot) });
     }
 
-    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier };
+    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier, listScreeningFeedback, createScreeningFeedback };
 }
 
 module.exports = { createApplicationsController, allowedTransitions, serializeApplication };

@@ -76,6 +76,15 @@ export interface ScreeningSessionSummary {
     scheduledAt?: string | null;
 }
 
+export interface ScreeningFeedback {
+    id: string;
+    applicationId: string;
+    reviewerId: string;
+    status: 'positive' | 'neutral' | 'negative' | 'needs_review';
+    note: string;
+    createdAt: string;
+}
+
 export interface ScreeningDossier {
     application: PipelineApplication;
     session: { id: string; status: string; consentedAt: string; consentVersion?: string | null; scheduledAt?: string | null; completedAt?: string | null };
