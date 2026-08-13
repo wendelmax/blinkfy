@@ -7,6 +7,7 @@ const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { getCandidatePositioningAnalytics } = require('../../services/blinkfy/talentPositioningService');
 const { buildResumeDraft } = require('../../services/blinkfy/talentResumeDraftService');
 const { buildEngagementDraft } = require('../../services/blinkfy/talentEngagementDraftService');
+const { transitionScreeningSession } = require('../../services/blinkfy/screeningSessionService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -122,7 +123,28 @@ function createTalentController({ prisma }) {
         return res.json({ id: updated.id, status: 'revoked', revokedAt: updated.revokedAt });
     }
 
-    return { getProfile, getPositioningAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent };
+    async function listScreeningInvitations(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        const sessions = await prisma.screeningSession.findMany({ where: { application: { candidateId: candidate.id }, status: 'invited' }, include: { application: { include: { job: { select: { id: true, title: true, client: { select: { id: true, name: true } } } } } } }, orderBy: { createdAt: 'desc' } });
+        return res.json({ items: sessions.map((session) => ({ id: session.id, applicationId: session.applicationId, status: session.status, createdAt: session.createdAt, job: session.application.job })) });
+    }
+    async function consentToScreening(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        const session = await prisma.screeningSession.findFirst({ where: { id: req.params.sessionId, application: { candidateId: candidate.id } } });
+        if (!session) return res.status(404).json({ message: 'Screening invitation not found' });
+        if (typeof req.body?.consentVersion !== 'string' || !req.body.consentVersion.trim()) return res.status(422).json({ message: 'consentVersion is required' });
+        try { transitionScreeningSession(session, 'consented'); } catch (error) { return res.status(422).json({ message: error.message }); }
+        const updated = await prisma.$transaction(async (transaction) => {
+            const saved = await transaction.screeningSession.update({ where: { id: session.id }, data: { status: 'consented', consentedAt: new Date(), consentVersion: req.body.consentVersion.trim() } });
+            await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, actorUserId: req.user.id, entityType: 'screening_session', entityId: saved.id, action: 'screening.candidate_consent_recorded', metadata: { consentVersion: saved.consentVersion, applicationId: saved.applicationId } });
+            return saved;
+        });
+        return res.json({ session: updated });
+    }
+
+    return { getProfile, getPositioningAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening };
 }
 
 module.exports = { createTalentController };

@@ -8,6 +8,7 @@ import { ConsentCenter } from '../../components/talent/ConsentCenter';
 import { CandidateGrowthPanel } from '../../components/talent/CandidateGrowthPanel';
 import { TalentProfileForm } from '../../components/talent/TalentProfileForm';
 import { VisibilityControl } from '../../components/talent/VisibilityControl';
+import { ScreeningInvitations } from '../../components/talent/ScreeningInvitations';
 
 export default function TalentPage() {
     const [profile, setProfile] = useState<CandidateTalentProfile | null>(null);
@@ -63,6 +64,7 @@ export default function TalentPage() {
             <VisibilityControl visibility={profile.visibility} onChange={changeVisibility} />
             <ConsentCenter initialItems={consents} />
             <CandidateGrowthPanel analytics={analytics} />
+            <ScreeningInvitations />
         </>}
     </main>;
 }
