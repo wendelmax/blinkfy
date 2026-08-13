@@ -10,6 +10,7 @@ import { MessageSuggestions } from './MessageSuggestions';
 import { ScreeningControls } from './ScreeningControls';
 import { ScreeningFeedback } from './ScreeningFeedback';
 import { ScreeningEvidenceForm } from './ScreeningEvidenceForm';
+import { InboundMessagePanel } from './InboundMessagePanel';
 
 type PipelineBoardProps = {
     jobId: string;
@@ -92,6 +93,7 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                                         {application.currentTitle && <p>{application.currentTitle}</p>}
                                         <ConsentBadge consentRecorded={application.consentRecorded} />
                                         <ScreeningControls jobId={jobId} applicationId={application.id} candidateName={application.fullName} />
+                                        <InboundMessagePanel jobId={jobId} applicationId={application.id} candidateName={application.fullName} />
                                         <MessageSuggestions jobId={jobId} applicationId={application.id} candidateName={application.fullName} />
                                         <button type="button" onClick={() => openDossier(application)}>Review screening dossier</button>
                                         {application.score ? <FitScoreCard score={application.score} /> : <p>Score not yet computed.</p>}

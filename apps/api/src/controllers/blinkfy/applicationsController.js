@@ -166,6 +166,12 @@ function createApplicationsController({ prisma }) {
         const items = await prisma.screeningFeedback.findMany({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } });
         return res.json({ items });
     }
+    async function listConciergeMessages(req, res) {
+        const application = await getScreeningApplication(req);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        const items = await prisma.conciergeMessage.findMany({ where: { applicationId: application.id }, orderBy: { receivedAt: 'desc' } });
+        return res.json({ items });
+    }
     async function createScreeningFeedback(req, res) {
         const application = await getScreeningApplication(req);
         if (!application) return res.status(404).json({ message: 'Application not found' });
@@ -283,7 +289,7 @@ function createApplicationsController({ prisma }) {
         return res.json({ application: serializeApplication({ ...application, scoreSnapshot: snapshot }), score: serializeScore(snapshot) });
     }
 
-    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, startScreening, completeScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier, listScreeningFeedback, createScreeningFeedback };
+    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, startScreening, completeScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier, listScreeningFeedback, createScreeningFeedback, listConciergeMessages };
 }
 
 module.exports = { createApplicationsController, allowedTransitions, serializeApplication };
