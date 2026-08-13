@@ -70,4 +70,21 @@ test('candidate can revoke consent, audit is recorded, and recruiter presentatio
     expect(event).toBeTruthy();
 });
 
+test('candidate can generate approval-gated resume and engagement drafts', async () => {
+    const value = await contextFactory('drafts');
+    await prisma.candidate.update({ where: { id: value.candidate.id }, data: { targetRole: 'Backend Engineer', profile: { currentTitle: 'Node Engineer', summary: 'Builds APIs', skills: ['Node.js'] } } });
+    const resume = await api(value, 'post', '/api/blinkfy/talent/drafts/resume').send({ targetRole: 'Platform Engineer' });
+    expect(resume.status).toBe(201);
+    expect(resume.body.draft).toMatchObject({ targetRole: 'Platform Engineer', requiresApproval: true, published: false });
+    const engagement = await api(value, 'post', '/api/blinkfy/talent/drafts/engagement').send({ topic: 'distributed systems', format: 'post' });
+    expect(engagement.status).toBe(201);
+    expect(engagement.body.draft).toMatchObject({ topic: 'distributed systems', requiresApproval: true, published: false });
+});
+
+test('candidate engagement drafts reject invalid topics', async () => {
+    const value = await contextFactory('invalid-draft');
+    const response = await api(value, 'post', '/api/blinkfy/talent/drafts/engagement').send({ topic: '', format: 'post' });
+    expect(response.status).toBe(422);
+});
+
 async function contextFactory(label) { return context(label); }
