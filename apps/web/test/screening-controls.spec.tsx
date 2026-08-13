@@ -8,6 +8,6 @@ describe('Screening controls', () => {
         const markup = renderToStaticMarkup(<ScreeningControls jobId="job-1" applicationId="application-1" candidateName="Ada Lovelace" />);
         expect(markup).toContain('Invite to screening');
         expect(markup).not.toContain('Schedule screening');
-        expect(markup).toContain('Do not check this box until the candidate has actively opted in.');
+        expect(markup).toContain('Do not record screening consent until the candidate has actively opted in.');
     });
 });

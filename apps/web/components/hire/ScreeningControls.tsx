@@ -26,6 +26,7 @@ export function ScreeningControls({ jobId, applicationId, candidateName }: Props
     return <section aria-label={`Screening controls for ${candidateName}`} style={{ marginTop: 10, padding: 10, border: '1px solid #e2e8f0', borderRadius: 8 }}>
         <strong>Screening session</strong>
         <p>{status ? `Status: ${status}` : 'No screening session invited.'}</p>
+        <small>Do not record screening consent until the candidate has actively opted in.</small>
         {!status && <button type="button" disabled={busy} onClick={() => void action('invite')}>Invite to screening</button>}
         {status === 'invited' && <div style={{ display: 'grid', gap: 6 }}>
             <label><input type="checkbox" checked={false} onChange={(event) => { if (event.target.checked) void action('consent', { consentVersion }); }} disabled={busy} /> Record candidate consent ({consentVersion})</label>
