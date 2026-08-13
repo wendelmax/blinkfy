@@ -56,6 +56,16 @@ export interface PipelineApplication {
     score?: FitScore | null;
 }
 
+export interface MessageSuggestion {
+    id: string;
+    applicationId: string;
+    candidateName?: string;
+    channel: 'linkedin' | 'email' | 'whatsapp';
+    content: string;
+    status: 'draft' | 'approved' | 'rejected';
+    createdAt: string;
+}
+
 export interface ScreeningDossier {
     application: PipelineApplication;
     session: { id: string; status: string; consentedAt: string; consentVersion?: string | null; scheduledAt?: string | null; completedAt?: string | null };
