@@ -480,6 +480,7 @@ model CandidateApplication {
   job            BlinkfyJob?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
   scoreSnapshots FitScoreSnapshot[]
   screeningSessions ScreeningSession[]
+  screeningFeedback ScreeningFeedback[]
   messageSuggestions MessageSuggestion[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -560,6 +561,27 @@ model ScreeningEvidence {
   @@index([sessionId, kind])
   @@index([retentionUntil])
   @@map("screening_evidences")
+}
+
+enum ScreeningFeedbackStatus {
+  positive
+  neutral
+  negative
+  needs_review
+}
+
+model ScreeningFeedback {
+  id            String                  @id @default(cuid())
+  applicationId String
+  reviewerId    String
+  status        ScreeningFeedbackStatus
+  note          String
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  application   CandidateApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+  @@map("screening_feedback")
 }
 
 enum ApplicationStage {

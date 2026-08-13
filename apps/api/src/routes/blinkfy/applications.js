@@ -18,6 +18,8 @@ function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     router.post('/:applicationId/screening/withdraw', reviewer, controller.withdrawScreening);
     router.post('/:applicationId/screening/evidence', reviewer, controller.addScreeningEvidence);
     router.get('/:applicationId/screening/dossier', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.getScreeningDossier);
+    router.get('/:applicationId/screening/feedback', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.listScreeningFeedback);
+    router.post('/:applicationId/screening/feedback', reviewer, controller.createScreeningFeedback);
     router.get('/:applicationId/messages', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), messageSuggestions.list);
     router.post('/:applicationId/messages', reviewer, messageSuggestions.create);
     router.patch('/:applicationId/messages/:suggestionId', reviewer, messageSuggestions.decide);
