@@ -66,6 +66,16 @@ export interface MessageSuggestion {
     createdAt: string;
 }
 
+export type ScreeningSessionStatus = 'invited' | 'consented' | 'scheduled' | 'in_progress' | 'completed' | 'withdrawn';
+
+export interface ScreeningSessionSummary {
+    id: string;
+    status: ScreeningSessionStatus;
+    consentedAt?: string | null;
+    consentVersion?: string | null;
+    scheduledAt?: string | null;
+}
+
 export interface ScreeningDossier {
     application: PipelineApplication;
     session: { id: string; status: string; consentedAt: string; consentVersion?: string | null; scheduledAt?: string | null; completedAt?: string | null };
