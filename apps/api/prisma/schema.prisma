@@ -536,9 +536,20 @@ model ScreeningSession {
   updatedAt       DateTime               @updatedAt
   application     CandidateApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   evidences       ScreeningEvidence[]
+  webhookEvents   ScreeningWebhookEvent[]
 
   @@index([applicationId, status])
   @@map("screening_sessions")
+}
+
+model ScreeningWebhookEvent {
+  id          String           @id @default(cuid())
+  eventId     String           @unique
+  sessionId   String
+  receivedAt  DateTime         @default(now())
+  session     ScreeningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([sessionId, receivedAt])
+  @@map("screening_webhook_events")
 }
 
 enum ScreeningEvidenceKind {
