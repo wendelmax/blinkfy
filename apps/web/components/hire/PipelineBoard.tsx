@@ -128,6 +128,17 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                 <section style={{ background: '#fff', padding: 24, maxWidth: 720, maxHeight: '80vh', overflow: 'auto' }}>
                     <h2 id="dossier-title">Screening dossier: {dossier.application.fullName}</h2>
                     <p>Session: {dossier.session.status} · Consent version: {dossier.session.consentVersion ?? 'not specified'}</p>
+                    {dossier.summary && <section aria-label="Screening review summary" style={{ padding: 12, background: '#f5f7fa', borderRadius: 8 }}>
+                        <h3>Human review summary</h3>
+                        <p>{dossier.summary.reviewReady ? 'Ready for human review' : 'Evidence is still incomplete'}</p>
+                        <p>{dossier.summary.evidenceCount} evidence item(s) · Score: {dossier.summary.score ?? 'not available'}</p>
+                        <ul>
+                            <li>Recording: {dossier.summary.evidenceByKind.recording ? 'available' : 'missing'}</li>
+                            <li>Transcript: {dossier.summary.evidenceByKind.transcript ? 'available' : 'missing'}</li>
+                            <li>Insight: {dossier.summary.evidenceByKind.insight ? 'available' : 'missing'}</li>
+                        </ul>
+                        <small>Automated screening never makes a hiring decision. A human reviewer must assess the evidence.</small>
+                    </section>}
                     {dossier.evidences.length === 0 ? <p>No screening evidence recorded yet.</p> : dossier.evidences.map((evidence) => <article key={evidence.id}><h3>{evidence.kind}</h3>{evidence.confidence != null && <p>Confidence: {evidence.confidence}%</p>} {evidence.uri && <p><a href={evidence.uri}>Open evidence</a></p>} {evidence.content && <p>{evidence.content}</p>}</article>)}
                     <button type="button" onClick={() => setDossier(null)}>Close dossier</button>
                 </section>
