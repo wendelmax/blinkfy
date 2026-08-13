@@ -101,6 +101,15 @@ export interface ScreeningDossier {
     };
 }
 
+export interface ScreeningEvidence {
+    id: string;
+    kind: 'recording' | 'transcript' | 'insight';
+    uri?: string | null;
+    content?: string | null;
+    confidence?: number | null;
+    retentionUntil?: string | null;
+}
+
 export interface CandidateImportResult {
     import: { id: string };
     created: number;
