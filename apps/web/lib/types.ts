@@ -61,6 +61,15 @@ export interface ScreeningDossier {
     session: { id: string; status: string; consentedAt: string; consentVersion?: string | null; scheduledAt?: string | null; completedAt?: string | null };
     evidences: Array<{ id: string; kind: 'recording' | 'transcript' | 'insight'; uri?: string | null; content?: string | null; confidence?: number | null }>;
     score?: FitScore | null;
+    summary?: {
+        status: string;
+        consentVersion?: string | null;
+        evidenceCount: number;
+        evidenceByKind: { recording: boolean; transcript: boolean; insight: boolean };
+        score?: number | null;
+        reviewReady: boolean;
+        requiresHumanReview: true;
+    };
 }
 
 export interface CandidateImportResult {
