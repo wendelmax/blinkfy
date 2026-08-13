@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { PipelineBoard } from '../../../../components/hire/PipelineBoard';
+import { ConciergeQueue } from '../../../../components/hire/ConciergeQueue';
 import { apiFetch, ApiError, getActiveClientId } from '../../../../lib/api';
 import type { BlinkfyJob, PipelineApplication } from '../../../../lib/types';
 
@@ -52,6 +53,7 @@ export default function JobPipelinePage() {
             {state === 'ready' && job && <>
                 <h1>{job.title}</h1>
                 <p>{job.requirements.join(' · ')}</p>
+                <ConciergeQueue jobId={job.id} applications={applications} />
                 <PipelineBoard jobId={job.id} applications={applications} />
             </>}
         </main>
