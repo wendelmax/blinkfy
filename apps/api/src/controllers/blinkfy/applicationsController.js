@@ -4,6 +4,7 @@ const { transitionScreeningSession } = require('../../services/blinkfy/screening
 const { validateEvidenceInput, findLatestDossierSession } = require('../../services/blinkfy/screeningDossierService');
 const { summarizeScreening } = require('../../services/blinkfy/screeningSummaryService');
 const { validateRecruiterFeedback } = require('../../services/blinkfy/conciergeFeedbackService');
+const { findExpiredEvidence } = require('../../services/blinkfy/screeningRetentionService');
 
 const allowedTransitions = {
     mapped: ['reviewed'],
@@ -156,7 +157,8 @@ function createApplicationsController({ prisma }) {
         if (!session) return res.status(404).json({ message: 'Screening dossier not found' });
         if (!session.consentedAt) return res.status(403).json({ message: 'Screening consent required' });
         const score = application.scoreSnapshots?.[0] || null;
-        return res.json({ application: serializeApplication(application), session: { id: session.id, status: session.status, consentedAt: session.consentedAt, consentVersion: session.consentVersion, scheduledAt: session.scheduledAt, startedAt: session.startedAt, completedAt: session.completedAt }, evidences: session.evidences, score: serializeScore(score), summary: summarizeScreening({ session, evidences: session.evidences, score }) });
+        const expiredEvidenceIds = findExpiredEvidence(session.evidences);
+        return res.json({ application: serializeApplication(application), session: { id: session.id, status: session.status, consentedAt: session.consentedAt, consentVersion: session.consentVersion, scheduledAt: session.scheduledAt, startedAt: session.startedAt, completedAt: session.completedAt }, evidences: session.evidences, retention: { expiredEvidenceIds, expiringCount: session.evidences.filter((evidence) => evidence.retentionUntil && !expiredEvidenceIds.includes(evidence.id)).length }, score: serializeScore(score), summary: summarizeScreening({ session, evidences: session.evidences, score }) });
     }
     async function listScreeningFeedback(req, res) {
         const application = await getScreeningApplication(req);

@@ -90,6 +90,7 @@ export interface ScreeningDossier {
     session: { id: string; status: string; consentedAt: string; consentVersion?: string | null; scheduledAt?: string | null; completedAt?: string | null };
     evidences: Array<{ id: string; kind: 'recording' | 'transcript' | 'insight'; uri?: string | null; content?: string | null; confidence?: number | null }>;
     score?: FitScore | null;
+    retention?: { expiredEvidenceIds: string[]; expiringCount: number };
     summary?: {
         status: string;
         consentVersion?: string | null;
