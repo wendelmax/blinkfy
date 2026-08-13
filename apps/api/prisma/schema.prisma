@@ -507,9 +507,12 @@ model MessageSuggestion {
   status        MessageSuggestionStatus @default(draft)
   approvedAt    DateTime?
   approvedById  String?
+  sourceMessageId String?
+  grounding     Json?
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
   application   CandidateApplication   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  sourceMessage ConciergeMessage?      @relation(fields: [sourceMessageId], references: [id], onDelete: SetNull)
 
   @@index([applicationId, status, createdAt])
   @@map("message_suggestions")
@@ -524,6 +527,7 @@ model ConciergeMessage {
   content           String
   receivedAt        DateTime              @default(now())
   application       CandidateApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  suggestions       MessageSuggestion[]
   @@index([applicationId, receivedAt])
   @@map("concierge_messages")
 }

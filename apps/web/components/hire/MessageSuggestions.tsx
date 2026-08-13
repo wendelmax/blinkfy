@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch, ApiError } from '../../lib/api';
 
-type Suggestion = { id: string; channel: 'linkedin' | 'email' | 'whatsapp'; content: string; status: 'draft' | 'approved' | 'rejected'; createdAt: string };
+type Suggestion = { id: string; channel: 'linkedin' | 'email' | 'whatsapp'; content: string; status: 'draft' | 'approved' | 'rejected'; createdAt: string; sourceMessageId?: string; grounding?: { chunkId: string; title: string }[] };
 
 type Props = { jobId: string; applicationId: string; candidateName: string };
 
@@ -13,6 +13,7 @@ export function MessageSuggestions({ jobId, applicationId, candidateName }: Prop
     const [channel, setChannel] = useState<Suggestion['channel']>('linkedin');
     const [error, setError] = useState('');
     const [open, setOpen] = useState(false);
+    const [sourceMessageId, setSourceMessageId] = useState('');
 
     async function load() {
         try { setItems((await apiFetch<{ items: Suggestion[] }>(`/api/blinkfy/jobs/${jobId}/applications/${applicationId}/messages`)).items); }
@@ -37,18 +38,27 @@ export function MessageSuggestions({ jobId, applicationId, candidateName }: Prop
         } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Message decision could not be saved.'); }
     }
 
+    async function generateGrounded() {
+        if (!sourceMessageId.trim()) { setError('Enter an inbound message ID to ground the draft.'); return; }
+        try {
+            const response = await apiFetch<{ suggestion: Suggestion }>(`/api/blinkfy/jobs/${jobId}/applications/${applicationId}/messages/grounded-draft`, { method: 'POST', body: JSON.stringify({ sourceMessageId: sourceMessageId.trim() }) });
+            setItems((current) => [response.suggestion, ...current]); setError('');
+        } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Grounded draft could not be created.'); }
+    }
+
     return <section aria-label={`Message suggestions for ${candidateName}`}>
         <button type="button" onClick={() => setOpen((current) => !current)}>{open ? 'Hide message drafts' : 'Review message drafts'}</button>
         {open && <div>
             <h4>Human-approved communication</h4>
             <p>Drafts never send automatically. Approve only after review.</p>
             {error && <p role="alert">{error}</p>}
+            <fieldset><legend>Grounded draft</legend><label>Inbound message ID<input value={sourceMessageId} onChange={(event) => setSourceMessageId(event.target.value)} /></label><button type="button" onClick={generateGrounded}>Generate grounded draft</button><small>Uses only approved client knowledge context.</small></fieldset>
             <form onSubmit={create}>
                 <label>Channel<select value={channel} onChange={(event) => setChannel(event.target.value as Suggestion['channel'])}><option value="linkedin">LinkedIn</option><option value="email">Email</option><option value="whatsapp">WhatsApp</option></select></label>
                 <label>Draft message<textarea value={content} onChange={(event) => setContent(event.target.value)} required rows={3} /></label>
                 <button type="submit">Save draft</button>
             </form>
-            {items.length === 0 ? <p>No message drafts yet.</p> : items.map((item) => <article key={item.id}><p><strong>{item.channel}</strong> · {item.status}</p><p>{item.content}</p>{item.status === 'draft' && <><button type="button" onClick={() => decide(item, 'approved')}>Approve</button><button type="button" onClick={() => decide(item, 'rejected')}>Reject</button></>}</article>)}
+            {items.length === 0 ? <p>No message drafts yet.</p> : items.map((item) => <article key={item.id}><p><strong>{item.channel}</strong> · {item.status}</p><p>{item.content}</p>{item.grounding && <p>Grounded in: {item.grounding.map((source) => source.title).join(', ')}</p>}{item.status === 'draft' && <><button type="button" onClick={() => decide(item, 'approved')}>Approve</button><button type="button" onClick={() => decide(item, 'rejected')}>Reject</button></>}</article>)}
         </div>}
     </section>;
 }
