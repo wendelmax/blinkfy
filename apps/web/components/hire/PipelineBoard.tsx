@@ -9,6 +9,7 @@ import { FitScoreCard } from './FitScoreCard';
 import { MessageSuggestions } from './MessageSuggestions';
 import { ScreeningControls } from './ScreeningControls';
 import { ScreeningFeedback } from './ScreeningFeedback';
+import { ScreeningEvidenceForm } from './ScreeningEvidenceForm';
 
 type PipelineBoardProps = {
     jobId: string;
@@ -143,6 +144,7 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                         <small>Automated screening never makes a hiring decision. A human reviewer must assess the evidence.</small>
                     </section>}
                     {dossier.evidences.length === 0 ? <p>No screening evidence recorded yet.</p> : dossier.evidences.map((evidence) => <article key={evidence.id}><h3>{evidence.kind}</h3>{evidence.confidence != null && <p>Confidence: {evidence.confidence}%</p>} {evidence.uri && <p><a href={evidence.uri}>Open evidence</a></p>} {evidence.content && <p>{evidence.content}</p>}</article>)}
+                    <ScreeningEvidenceForm jobId={jobId} applicationId={dossier.application.id} onAdded={(evidence) => setDossier((current) => current ? { ...current, evidences: [...current.evidences, evidence] } : current)} />
                     <ScreeningFeedback jobId={jobId} applicationId={dossier.application.id} candidateName={dossier.application.fullName} />
                     <button type="button" onClick={() => setDossier(null)}>Close dossier</button>
                 </section>
