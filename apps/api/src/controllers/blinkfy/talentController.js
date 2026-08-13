@@ -5,6 +5,8 @@ const {
 } = require('../../services/blinkfy/talentProfileService');
 const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { getCandidatePositioningAnalytics } = require('../../services/blinkfy/talentPositioningService');
+const { buildResumeDraft } = require('../../services/blinkfy/talentResumeDraftService');
+const { buildEngagementDraft } = require('../../services/blinkfy/talentEngagementDraftService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -25,6 +27,19 @@ function createTalentController({ prisma }) {
         });
         if (!analytics) return res.status(404).json({ message: 'Candidate profile not found' });
         return res.json(analytics);
+    }
+
+    async function createResumeDraft(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        return res.status(201).json({ draft: buildResumeDraft({ profile: candidate.profile || {}, targetRole: req.body?.targetRole || candidate.targetRole }) });
+    }
+
+    async function createEngagementDraft(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        try { return res.status(201).json({ draft: buildEngagementDraft(req.body) }); }
+        catch (error) { return res.status(422).json({ message: error.message }); }
     }
 
     async function patchProfile(req, res) {
@@ -107,7 +122,7 @@ function createTalentController({ prisma }) {
         return res.json({ id: updated.id, status: 'revoked', revokedAt: updated.revokedAt });
     }
 
-    return { getProfile, getPositioningAnalytics, patchProfile, patchVisibility, listConsents, revokeConsent };
+    return { getProfile, getPositioningAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent };
 }
 
 module.exports = { createTalentController };
