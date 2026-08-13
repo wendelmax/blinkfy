@@ -112,6 +112,13 @@ function createApplicationsController({ prisma }) {
         let data = {};
         if (action === 'consent') { nextStatus = 'consented'; data = { consentedAt: new Date(), consentVersion: req.body?.consentVersion || 'v1' }; }
         if (action === 'schedule') { nextStatus = 'scheduled'; data = { scheduledAt: new Date(req.body?.scheduledAt || Date.now()) }; }
+        if (action === 'start') { nextStatus = 'in_progress'; data = { startedAt: new Date() }; }
+        if (action === 'complete') {
+            const evidence = await prisma.screeningEvidence.findMany({ where: { sessionId: existing.id, kind: { in: ['transcript', 'insight'] } }, select: { kind: true } });
+            const kinds = new Set(evidence.map((item) => item.kind));
+            if (!kinds.has('transcript') || !kinds.has('insight')) return res.status(422).json({ message: 'Transcript and insight evidence are required before completing screening' });
+            nextStatus = 'completed'; data = { completedAt: new Date() };
+        }
         if (action === 'withdraw') { nextStatus = 'withdrawn'; data = { withdrawnAt: new Date() }; }
         try { transitionScreeningSession(existing, nextStatus); } catch (error) { return res.status(422).json({ message: error.message }); }
         const session = await prisma.screeningSession.update({ where: { id: existing.id }, data: { ...data, status: nextStatus } });
@@ -122,6 +129,8 @@ function createApplicationsController({ prisma }) {
     const inviteScreening = (req, res) => screeningAction(req, res, 'invite');
     const consentScreening = (req, res) => screeningAction(req, res, 'consent');
     const scheduleScreening = (req, res) => screeningAction(req, res, 'schedule');
+    const startScreening = (req, res) => screeningAction(req, res, 'start');
+    const completeScreening = (req, res) => screeningAction(req, res, 'complete');
     const withdrawScreening = (req, res) => screeningAction(req, res, 'withdraw');
     async function addScreeningEvidence(req, res) {
         const application = await findApplication({ prisma, workspaceId: req.workspace.id, jobId: req.params.jobId, applicationId: req.params.applicationId });
@@ -272,7 +281,7 @@ function createApplicationsController({ prisma }) {
         return res.json({ application: serializeApplication({ ...application, scoreSnapshot: snapshot }), score: serializeScore(snapshot) });
     }
 
-    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier, listScreeningFeedback, createScreeningFeedback };
+    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, startScreening, completeScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier, listScreeningFeedback, createScreeningFeedback };
 }
 
 module.exports = { createApplicationsController, allowedTransitions, serializeApplication };
