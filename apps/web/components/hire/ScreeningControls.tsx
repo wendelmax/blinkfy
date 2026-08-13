@@ -37,6 +37,8 @@ export function ScreeningControls({ jobId, applicationId, candidateName }: Props
             <label>Screening time <input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} disabled={busy} required /></label>
             <button type="button" disabled={busy || !scheduledAt} onClick={() => void action('schedule', { scheduledAt: new Date(scheduledAt).toISOString() })}>Schedule screening</button>
         </div>}
+        {status === 'scheduled' && <button type="button" disabled={busy} onClick={() => void action('start')}>Start screening</button>}
+        {status === 'in_progress' && <button type="button" disabled={busy} onClick={() => void action('complete')}>Complete screening</button>}
         {status && !['completed', 'withdrawn'].includes(status) && <button type="button" disabled={busy} onClick={() => void action('withdraw')}>Withdraw screening</button>}
         {error && <p role="alert">{error}</p>}
     </section>;
