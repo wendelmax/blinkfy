@@ -25,6 +25,7 @@ function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     router.get('/:applicationId/inbox', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.listConciergeMessages);
     router.get('/:applicationId/messages', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), messageSuggestions.list);
     router.post('/:applicationId/messages', reviewer, messageSuggestions.create);
+    router.post('/:applicationId/messages/grounded-draft', reviewer, messageSuggestions.generateGrounded);
     router.patch('/:applicationId/messages/:suggestionId', reviewer, messageSuggestions.decide);
 
     return router;

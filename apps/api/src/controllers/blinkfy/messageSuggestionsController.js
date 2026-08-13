@@ -1,5 +1,7 @@
 const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { validateMessageSuggestionInput } = require('../../services/blinkfy/messageSuggestionService');
+const { searchChunks } = require('../../services/blinkfy/knowledgeBaseService');
+const { buildGroundedDraft } = require('../../services/blinkfy/groundedDraftService');
 
 function createMessageSuggestionsController({ prisma }) {
     async function findApplication(req) {
@@ -38,7 +40,24 @@ function createMessageSuggestionsController({ prisma }) {
         return res.json({ suggestion });
     }
 
-    return { list, create, decide };
+    async function generateGrounded(req, res) {
+        const application = await findApplication(req);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        const inboundMessage = await prisma.conciergeMessage.findFirst({ where: { id: req.body?.sourceMessageId, applicationId: application.id } });
+        if (!inboundMessage) return res.status(404).json({ message: 'Inbound message not found' });
+        const documents = await prisma.knowledgeDocument.findMany({ where: { clientId: application.clientId }, include: { chunks: true } });
+        const matches = searchChunks(documents.flatMap((document) => document.chunks.map((chunk) => ({ ...chunk, title: document.title }))), inboundMessage.content);
+        let draft;
+        try { draft = buildGroundedDraft({ inboundMessage, matches }); } catch (error) { if (error.message === 'NO_GROUNDING_CONTEXT') return res.status(422).json({ message: 'No grounded knowledge context was found.' }); throw error; }
+        const suggestion = await prisma.$transaction(async (transaction) => {
+            const created = await transaction.messageSuggestion.create({ data: { applicationId: application.id, channel: draft.channel, content: draft.content, sourceMessageId: inboundMessage.id, grounding: draft.grounding } });
+            await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, clientId: application.clientId, actorUserId: req.user.id, entityType: 'message_suggestion', entityId: created.id, action: 'message_suggestion.grounded_draft_created', metadata: { sourceMessageId: inboundMessage.id, groundingCount: draft.grounding.length } });
+            return created;
+        });
+        return res.status(201).json({ suggestion });
+    }
+
+    return { list, create, decide, generateGrounded };
 }
 
 module.exports = { createMessageSuggestionsController };

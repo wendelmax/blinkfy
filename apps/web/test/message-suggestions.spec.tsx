@@ -10,5 +10,6 @@ describe('MessageSuggestions', () => {
         const markup = renderToStaticMarkup(<MessageSuggestions jobId="j1" applicationId="a1" candidateName="Ada" />);
         expect(markup).toContain('Review message drafts');
         expect(markup).toContain('Message suggestions for Ada');
+        expect(markup).toContain('Generate grounded draft');
     });
 });
