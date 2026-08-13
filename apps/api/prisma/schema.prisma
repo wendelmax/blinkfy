@@ -482,6 +482,7 @@ model CandidateApplication {
   screeningSessions ScreeningSession[]
   screeningFeedback ScreeningFeedback[]
   messageSuggestions MessageSuggestion[]
+  conciergeMessages ConciergeMessage[]
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
@@ -511,6 +512,19 @@ model MessageSuggestion {
 
   @@index([applicationId, status, createdAt])
   @@map("message_suggestions")
+}
+
+model ConciergeMessage {
+  id                String                @id @default(cuid())
+  applicationId     String
+  externalMessageId String                @unique
+  channel           String
+  direction         String                @default("inbound")
+  content           String
+  receivedAt        DateTime              @default(now())
+  application       CandidateApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  @@index([applicationId, receivedAt])
+  @@map("concierge_messages")
 }
 
 enum ScreeningSessionStatus {
