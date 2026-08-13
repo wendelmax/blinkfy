@@ -3,25 +3,29 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiFetch, ApiError, getActiveWorkspaceId } from '../../lib/api';
-import type { CandidateTalentProfile, TalentConsentSummary } from '../../lib/types';
+import type { CandidateTalentProfile, TalentConsentSummary, TalentPositioningAnalytics } from '../../lib/types';
 import { ConsentCenter } from '../../components/talent/ConsentCenter';
+import { CandidateGrowthPanel } from '../../components/talent/CandidateGrowthPanel';
 import { TalentProfileForm } from '../../components/talent/TalentProfileForm';
 import { VisibilityControl } from '../../components/talent/VisibilityControl';
 
 export default function TalentPage() {
     const [profile, setProfile] = useState<CandidateTalentProfile | null>(null);
     const [consents, setConsents] = useState<TalentConsentSummary[]>([]);
+    const [analytics, setAnalytics] = useState<TalentPositioningAnalytics | null>(null);
     const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
     const [message, setMessage] = useState('');
 
     async function load() {
         try {
-            const [nextProfile, nextConsents] = await Promise.all([
+            const [nextProfile, nextConsents, nextAnalytics] = await Promise.all([
                 apiFetch<CandidateTalentProfile>('/api/blinkfy/talent/profile'),
                 apiFetch<{ items: TalentConsentSummary[] }>('/api/blinkfy/talent/consents'),
+                apiFetch<TalentPositioningAnalytics>('/api/blinkfy/talent/analytics/positioning'),
             ]);
             setProfile(nextProfile);
             setConsents(nextConsents.items);
+            setAnalytics(nextAnalytics);
             setState('ready');
         } catch (caught) {
             const error = caught as ApiError;
@@ -54,10 +58,11 @@ export default function TalentPage() {
         <p>Your profile is free. You control who can discover it and which companies may receive it.</p>
         {state === 'loading' && <p>Loading your profile…</p>}
         {state === 'error' && <p role="alert">{message}</p>}
-        {state === 'ready' && profile && <>
+        {state === 'ready' && profile && analytics && <>
             <TalentProfileForm profile={profile} onSaved={setProfile} />
             <VisibilityControl visibility={profile.visibility} onChange={changeVisibility} />
             <ConsentCenter initialItems={consents} />
+            <CandidateGrowthPanel analytics={analytics} />
         </>}
     </main>;
 }

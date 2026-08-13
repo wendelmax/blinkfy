@@ -1,0 +1,89 @@
+'use client';
+
+import { FormEvent, useState } from 'react';
+import { ApiError, apiFetch } from '../../lib/api';
+import type { TalentDraft, TalentPositioningAnalytics } from '../../lib/types';
+
+const ACTION_LABELS: Record<string, string> = {
+    targetRole: 'target role',
+    headline: 'headline',
+    bio: 'bio',
+    skills: 'skills',
+    location: 'location',
+    workModel: 'work model',
+    availability: 'availability',
+    portfolioUrl: 'portfolio link',
+    set_visibility: 'visibility',
+};
+
+export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioningAnalytics }) {
+    const [topic, setTopic] = useState('');
+    const [targetRole, setTargetRole] = useState('');
+    const [format, setFormat] = useState<'post' | 'comment' | 'connection'>('post');
+    const [resumeDraft, setResumeDraft] = useState<TalentDraft | null>(null);
+    const [engagementDraft, setEngagementDraft] = useState<TalentDraft | null>(null);
+    const [busy, setBusy] = useState<'resume' | 'engagement' | null>(null);
+    const [error, setError] = useState('');
+
+    async function createResumeDraft() {
+        setBusy('resume');
+        setError('');
+        try {
+            const result = await apiFetch<{ draft: TalentDraft }>('/api/blinkfy/talent/drafts/resume', {
+                method: 'POST',
+                body: JSON.stringify({ targetRole }),
+            });
+            setResumeDraft(result.draft);
+        } catch (caught) {
+            setError(caught instanceof ApiError ? caught.message : 'Resume draft could not be created.');
+        } finally { setBusy(null); }
+    }
+
+    async function createEngagementDraft(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setBusy('engagement');
+        setError('');
+        try {
+            const result = await apiFetch<{ draft: TalentDraft }>('/api/blinkfy/talent/drafts/engagement', {
+                method: 'POST',
+                body: JSON.stringify({ topic, format, tone: 'professional' }),
+            });
+            setEngagementDraft(result.draft);
+        } catch (caught) {
+            setError(caught instanceof ApiError ? caught.message : 'Engagement draft could not be created.');
+        } finally { setBusy(null); }
+    }
+
+    return <section aria-labelledby="candidate-growth-heading" style={{ marginTop: 24, padding: 20, border: '1px solid #d8dee9', borderRadius: 10 }}>
+        <h2 id="candidate-growth-heading">Candidate growth</h2>
+        <p>Use your profile to build a stronger network. Every generated asset is a draft and requires your approval before sharing.</p>
+
+        <div style={{ display: 'grid', gap: 8, margin: '16px 0' }}>
+            <strong>Positioning: {analytics.profileCompleteness.percentage}% complete</strong>
+            <progress aria-label="Profile completeness" value={analytics.profileCompleteness.percentage} max="100" />
+            <span>{analytics.profileCompleteness.completed} of {analytics.profileCompleteness.total} positioning fields completed · {analytics.activeConsentCount} active consent(s)</span>
+            <span>Discoverability: {analytics.discoverability === 'enabled' ? 'enabled' : 'private'}</span>
+            {analytics.nextActions.length > 0 && <small>Next: {analytics.nextActions.map((action) => ACTION_LABELS[action] ?? action).join(', ')}</small>}
+        </div>
+
+        <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+            <label htmlFor="target-role">Target role for resume draft</label>
+            <input id="target-role" value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. Account Executive" />
+            <button type="button" onClick={() => void createResumeDraft()} disabled={busy !== null}>{busy === 'resume' ? 'Creating…' : 'Create resume draft'}</button>
+        </div>
+
+        <form onSubmit={createEngagementDraft} style={{ display: 'grid', gap: 8 }}>
+            <label htmlFor="engagement-topic">Topic for a value-network draft</label>
+            <input id="engagement-topic" value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="e.g. discovery-led sales" required />
+            <label htmlFor="engagement-format">Draft type</label>
+            <select id="engagement-format" value={format} onChange={(event) => setFormat(event.target.value as typeof format)}>
+                <option value="post">Post</option><option value="comment">Comment</option><option value="connection">Connection note</option>
+            </select>
+            <button type="submit" disabled={busy !== null}>{busy === 'engagement' ? 'Creating…' : 'Create engagement draft'}</button>
+        </form>
+
+        {error && <p role="alert">{error}</p>}
+        {resumeDraft && <article aria-label="Resume draft" style={{ marginTop: 16 }}><h3>Resume draft</h3><p>{String(resumeDraft.summary ?? 'No summary generated.')}</p><small>Draft only · review before using</small></article>}
+        {engagementDraft && <article aria-label="Engagement draft" style={{ marginTop: 16 }}><h3>Engagement draft</h3><p>{String(engagementDraft.content ?? '')}</p><small>Draft only · review before sharing</small></article>}
+    </section>;
+}
