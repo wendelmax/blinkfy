@@ -234,6 +234,7 @@ model Client {
   candidateImports CandidateImport[]
   consents         CandidateConsent[]
   applications     CandidateApplication[]
+  knowledgeDocuments KnowledgeDocument[]
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 }
@@ -525,6 +526,30 @@ model ConciergeMessage {
   application       CandidateApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   @@index([applicationId, receivedAt])
   @@map("concierge_messages")
+}
+
+model KnowledgeDocument {
+  id        String            @id @default(cuid())
+  clientId  String
+  title     String
+  source    String            @default("manual")
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  client    Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  chunks    KnowledgeChunk[]
+  @@unique([clientId, title])
+  @@index([clientId, createdAt])
+  @@map("knowledge_documents")
+}
+
+model KnowledgeChunk {
+  id         String            @id @default(cuid())
+  documentId String
+  position   Int
+  content    String
+  document   KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  @@unique([documentId, position])
+  @@map("knowledge_chunks")
 }
 
 enum ScreeningSessionStatus {
