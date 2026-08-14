@@ -2,6 +2,7 @@ const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { validateWebhookSubscription } = require('../../services/blinkfy/conciergeWebhookSubscriptionService');
 const { signWebhookPayload } = require('../../services/blinkfy/conciergeWebhookSubscriptionService');
 const { buildWebhookEvent } = require('../../services/blinkfy/conciergeWebhookService');
+const { buildOutboxRecord } = require('../../services/blinkfy/conciergeWebhookOutboxService');
 function createConciergeWebhookSubscriptionController({ prisma }) {
   async function get(req, res) { const item = await prisma.conciergeWebhookSubscription.findUnique({ where: { clientId: req.client.id } }); return res.json({ subscription: item && { ...item, secret: undefined } }); }
   async function update(req, res) {
@@ -18,8 +19,12 @@ function createConciergeWebhookSubscriptionController({ prisma }) {
     if (!subscription) return res.status(404).json({ message: 'Webhook subscription not found' });
     let event; try { event = buildWebhookEvent(req.body); } catch (error) { return res.status(422).json({ message: error.message }); }
     if (!subscription.events.includes(event.type)) return res.status(422).json({ message: 'Event is not enabled for this subscription' });
-    return res.json({ delivery: { url: subscription.url, eventId: event.id, eventType: event.type, signature: signWebhookPayload({ eventId: event.id, body: event, secret: subscription.secret }), approved: false, transmitted: false } });
+    const signature = signWebhookPayload({ eventId: event.id, body: event, secret: subscription.secret });
+    const record = buildOutboxRecord({ clientId: req.client.id, event, signature });
+    const outbox = await prisma.conciergeWebhookOutbox.upsert({ where: { clientId_eventId: { clientId: req.client.id, eventId: event.id } }, create: record, update: {} });
+    return res.json({ delivery: { url: subscription.url, eventId: event.id, eventType: event.type, signature, approved: false, transmitted: false, outboxId: outbox.id, status: outbox.status } });
   }
-  return { get, update, preview };
+  async function listOutbox(req, res) { const items = await prisma.conciergeWebhookOutbox.findMany({ where: { clientId: req.client.id }, orderBy: { createdAt: 'desc' }, take: 50 }); return res.json({ items }); }
+  return { get, update, preview, listOutbox };
 }
 module.exports = { createConciergeWebhookSubscriptionController };

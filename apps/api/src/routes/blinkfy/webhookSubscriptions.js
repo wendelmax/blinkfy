@@ -5,6 +5,7 @@ function createWebhookSubscriptionsRouter({ requireWorkspaceRole, requireClientA
   router.get('/', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, controller.get);
   router.put('/', requireWorkspaceRole('owner', 'admin', 'recruiter'), requireClientAccess, controller.update);
   router.post('/preview', requireWorkspaceRole('owner', 'admin', 'recruiter'), requireClientAccess, controller.preview);
+  router.get('/outbox', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, controller.listOutbox);
   return router;
 }
 module.exports = { createWebhookSubscriptionsRouter };
