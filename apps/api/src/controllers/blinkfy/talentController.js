@@ -10,6 +10,8 @@ const { buildEngagementDraft } = require('../../services/blinkfy/talentEngagemen
 const { transitionScreeningSession } = require('../../services/blinkfy/screeningSessionService');
 const { recommendConnections } = require('../../services/blinkfy/networkInsightsService');
 const { buildTalentUsageAnalytics } = require('../../services/blinkfy/talentUsageAnalyticsService');
+const { consumeUsage } = require('../../services/blinkfy/talentUsageService');
+const { usageFeatureForDraft, periodKey } = require('../../services/blinkfy/talentDraftUsageService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -63,9 +65,14 @@ function createTalentController({ prisma }) {
     }
 
     async function createEngagementDraft(req, res) {
-        const candidate = await resolveCandidate(req);
+        const candidate = await prisma.candidate.findFirst({ where: { workspaceId: req.workspace.id, userId: req.user.id }, include: { subscription: true } });
         if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
-        try { return res.status(201).json({ draft: buildEngagementDraft(req.body) }); }
+        try {
+            const draft = buildEngagementDraft(req.body);
+            const feature = usageFeatureForDraft(req.body?.format);
+            if (feature) await consumeUsage({ prisma, candidateId: candidate.id, feature, plan: candidate.subscription?.plan === 'pro' ? 'pro' : 'free', period: periodKey() });
+            return res.status(201).json({ draft });
+        }
         catch (error) { return res.status(422).json({ message: error.message }); }
     }
 

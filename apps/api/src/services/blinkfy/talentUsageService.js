@@ -10,12 +10,13 @@ function usageLimitFor(plan, feature) {
 async function consumeUsage({ prisma, candidateId, feature, plan, period }) {
   const limit = usageLimitFor(plan, feature);
   if (!limit) throw new Error('feature unavailable');
+  const current = await prisma.candidateUsage.findUnique({ where: { candidateId_period_feature: { candidateId, period, feature } } });
+  if (current && current.count >= limit) throw new Error('monthly usage limit reached');
   const usage = await prisma.candidateUsage.upsert({
     where: { candidateId_period_feature: { candidateId, period, feature } },
     create: { candidateId, period, feature, count: 1 },
     update: { count: { increment: 1 } },
   });
-  if (usage.count > limit) throw new Error('monthly usage limit reached');
   return usage;
 }
 
