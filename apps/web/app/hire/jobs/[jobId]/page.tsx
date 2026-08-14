@@ -8,6 +8,7 @@ import { PipelineBoard } from '../../../../components/hire/PipelineBoard';
 import { ConciergeQueue } from '../../../../components/hire/ConciergeQueue';
 import { UnifiedInbox } from '../../../../components/hire/UnifiedInbox';
 import { SchedulingPolicyPanel } from '../../../../components/hire/SchedulingPolicyPanel';
+import { WebhookSubscriptionPanel } from '../../../../components/hire/WebhookSubscriptionPanel';
 import { apiFetch, ApiError, getActiveClientId } from '../../../../lib/api';
 import type { BlinkfyJob, PipelineApplication } from '../../../../lib/types';
 
@@ -58,6 +59,7 @@ export default function JobPipelinePage() {
                 <ConciergeQueue jobId={job.id} applications={applications} />
                 <UnifiedInbox clientId={job.clientId} jobId={job.id} />
                 <SchedulingPolicyPanel clientId={job.clientId} />
+                <WebhookSubscriptionPanel clientId={job.clientId} />
                 <PipelineBoard jobId={job.id} applications={applications} />
             </>}
         </main>
