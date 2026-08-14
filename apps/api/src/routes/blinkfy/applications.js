@@ -23,6 +23,8 @@ function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     router.get('/:applicationId/screening/feedback', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.listScreeningFeedback);
     router.post('/:applicationId/screening/feedback', reviewer, controller.createScreeningFeedback);
     router.get('/:applicationId/inbox', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.listConciergeMessages);
+    router.get('/:applicationId/follow-up', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.getFollowUp);
+    router.put('/:applicationId/follow-up', reviewer, controller.configureFollowUp);
     router.get('/:applicationId/messages', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), messageSuggestions.list);
     router.post('/:applicationId/messages', reviewer, messageSuggestions.create);
     router.post('/:applicationId/messages/grounded-draft', reviewer, messageSuggestions.generateGrounded);

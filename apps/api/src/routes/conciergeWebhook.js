@@ -12,6 +12,7 @@ function createConciergeWebhookRouter({ prisma }) {
       const existing = await transaction.conciergeMessage.findUnique({ where: { externalMessageId: input.externalMessageId } });
       if (existing) return { duplicate: true, message: existing };
       const message = await transaction.conciergeMessage.create({ data: { applicationId: application.id, ...input } });
+      await transaction.conciergeFollowUpSequence.updateMany({ where: { applicationId: application.id, status: 'active' }, data: { status: 'interrupted', interruptedAt: new Date() } });
       await recordAuditEvent({ prisma: transaction, workspaceId: application.client.workspaceId, clientId: application.clientId, entityType: 'concierge_message', entityId: message.id, action: 'concierge.inbound_message_received', metadata: { externalMessageId: message.externalMessageId, channel: message.channel } });
       return { duplicate: false, message };
     });
