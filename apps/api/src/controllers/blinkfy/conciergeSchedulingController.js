@@ -1,8 +1,9 @@
 const { recordAuditEvent } = require('../../services/blinkfy/auditService');
-const { validateSchedulingPolicy } = require('../../services/blinkfy/conciergeSchedulingService');
+const { buildCalendarPreview, validateSchedulingPolicy } = require('../../services/blinkfy/conciergeSchedulingService');
 
 function createConciergeSchedulingController({ prisma }) {
   async function get(req, res) { const policy = await prisma.conciergeSchedulingPolicy.findUnique({ where: { clientId: req.client.id } }); return res.json({ policy }); }
+  async function preview(req, res) { const policy = await prisma.conciergeSchedulingPolicy.findUnique({ where: { clientId: req.client.id } }); return res.json({ preview: buildCalendarPreview({ policy }) }); }
   async function update(req, res) {
     let input; try { input = validateSchedulingPolicy(req.body); } catch (error) { return res.status(422).json({ message: error.message }); }
     const policy = await prisma.$transaction(async (transaction) => {
@@ -12,6 +13,6 @@ function createConciergeSchedulingController({ prisma }) {
     });
     return res.json({ policy: { ...policy, requiresApproval: true, autonomousSending: false } });
   }
-  return { get, update };
+  return { get, update, preview };
 }
 module.exports = { createConciergeSchedulingController };

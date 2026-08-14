@@ -14,7 +14,12 @@ function validateSchedulingPolicy(input = {}) {
 }
 
 function suggestSlots({ candidates = [] } = {}) {
-  return candidates.slice(0, MAX_SUGGESTIONS).map((slot) => ({ ...slot, requiresApproval: true }));
+  return candidates.slice(0, MAX_SUGGESTIONS).map((slot) => ({ start: slot.start, end: slot.end, requiresApproval: true, scheduled: false, transmitted: false }));
 }
 
-module.exports = { MAX_SUGGESTIONS, validateSchedulingPolicy, suggestSlots };
+function buildCalendarPreview({ policy } = {}) {
+  if (!policy || !Array.isArray(policy.windows)) return { timezone: policy?.timezone || null, slots: [], requiresApproval: true, scheduled: false, transmitted: false };
+  return { timezone: policy.timezone, slots: suggestSlots({ candidates: policy.windows }), requiresApproval: true, scheduled: false, transmitted: false };
+}
+
+module.exports = { MAX_SUGGESTIONS, validateSchedulingPolicy, suggestSlots, buildCalendarPreview };
