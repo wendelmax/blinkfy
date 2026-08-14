@@ -12,6 +12,7 @@ import { WebhookSubscriptionPanel } from '../../../../components/hire/WebhookSub
 import { IntegrationCatalogPanel } from '../../../../components/hire/IntegrationCatalogPanel';
 import { McpManifestPanel } from '../../../../components/hire/McpManifestPanel';
 import { McpToolPreviewPanel } from '../../../../components/hire/McpToolPreviewPanel';
+import { McpAuditPanel } from '../../../../components/hire/McpAuditPanel';
 import { apiFetch, ApiError, getActiveClientId } from '../../../../lib/api';
 import type { BlinkfyJob, PipelineApplication } from '../../../../lib/types';
 
@@ -66,6 +67,7 @@ export default function JobPipelinePage() {
                 <IntegrationCatalogPanel clientId={job.clientId} />
                 <McpManifestPanel clientId={job.clientId} />
                 <McpToolPreviewPanel clientId={job.clientId} />
+                <McpAuditPanel clientId={job.clientId} />
                 <PipelineBoard jobId={job.id} applications={applications} />
             </>}
         </main>
