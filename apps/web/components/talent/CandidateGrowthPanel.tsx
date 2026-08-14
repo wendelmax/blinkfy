@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { ApiError, apiFetch } from '../../lib/api';
-import type { TalentDraft, TalentDraftHistoryItem, TalentNetworkRecommendation, TalentPositioningAnalytics, TalentUsageAnalytics } from '../../lib/types';
+import type { TalentDraft, TalentDraftHistoryItem, TalentNetworkRecommendation, TalentPlanCatalog, TalentPositioningAnalytics, TalentUsageAnalytics } from '../../lib/types';
 
 const ACTION_LABELS: Record<string, string> = {
     targetRole: 'target role',
@@ -28,6 +28,7 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
     const [networkLoaded, setNetworkLoaded] = useState(false);
     const [usage, setUsage] = useState<TalentUsageAnalytics | null>(null);
     const [history, setHistory] = useState<TalentDraftHistoryItem[]>([]);
+    const [plans, setPlans] = useState<TalentPlanCatalog | null>(null);
 
     async function loadRecommendations() {
         setError('');
@@ -48,6 +49,12 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         setError('');
         try { const result = await apiFetch<{ items: TalentDraftHistoryItem[] }>('/api/blinkfy/talent/drafts'); setHistory(result.items); }
         catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Draft history could not be loaded.'); }
+    }
+
+    async function loadPlans() {
+        setError('');
+        try { setPlans(await apiFetch<TalentPlanCatalog>('/api/blinkfy/talent/plans')); }
+        catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Plan catalog could not be loaded.'); }
     }
 
     async function reviewDraft(id: string, status: 'approved' | 'rejected') {
@@ -132,6 +139,12 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
             <h3 id="talent-draft-history-heading">Draft history</h3>
             <button type="button" onClick={() => void loadHistory()}>View saved drafts</button>
             {history.length > 0 && <ul>{history.map((item) => <li key={item.id}>{item.kind} · {item.status} · {new Date(item.createdAt).toLocaleDateString()} {item.status === 'pending' && <><button type="button" onClick={() => void reviewDraft(item.id, 'approved')}>Approve</button><button type="button" onClick={() => void reviewDraft(item.id, 'rejected')}>Reject</button></>}</li>)}</ul>}
+        </section>
+
+        <section aria-labelledby="talent-plans-heading" style={{ marginTop: 16 }}>
+            <h3 id="talent-plans-heading">Plans</h3>
+            <button type="button" onClick={() => void loadPlans()}>Compare Free and Pro</button>
+            {plans && <div role="status"><p>Current plan: {plans.currentPlan} · {plans.status}</p><ul>{plans.plans.map((plan) => <li key={plan.id}>{plan.id}: {plan.limits['content.draft']} content drafts and {plan.limits['comment.draft']} comment drafts per period</li>)}</ul><small>Plan comparison only. Billing and upgrades require a separate approved flow.</small></div>}
         </section>
 
         {error && <p role="alert">{error}</p>}

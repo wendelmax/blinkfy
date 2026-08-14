@@ -56,6 +56,12 @@ export interface TalentDraftHistoryItem {
     updatedAt: string;
 }
 
+export interface TalentPlanCatalog {
+    currentPlan: 'free' | 'pro';
+    status: string;
+    plans: { id: string; limits: Record<string, number>; entitlements: string[] }[];
+}
+
 export type FitScore = SharedFitScore;
 
 export interface BlinkfyJob {

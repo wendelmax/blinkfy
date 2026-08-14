@@ -56,6 +56,7 @@ describe('Blinkfy Talent workspace', () => {
         expect(markup).toContain('Nothing is contacted or published automatically');
         expect(markup).toContain('View plan usage');
         expect(markup).toContain('View saved drafts');
+        expect(markup).toContain('Compare Free and Pro');
         expect(markup).toContain('requires your approval');
     });
 });

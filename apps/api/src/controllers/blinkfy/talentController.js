@@ -13,6 +13,7 @@ const { buildTalentUsageAnalytics } = require('../../services/blinkfy/talentUsag
 const { consumeUsage } = require('../../services/blinkfy/talentUsageService');
 const { usageFeatureForDraft, periodKey } = require('../../services/blinkfy/talentDraftUsageService');
 const { transitionCandidateDraft } = require('../../services/blinkfy/talentDraftReviewService');
+const { buildTalentPlanCatalog } = require('../../services/blinkfy/talentPlanCatalogService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -57,6 +58,12 @@ function createTalentController({ prisma }) {
         const period = periodStart.toISOString().slice(0, 7);
         const usage = await prisma.candidateUsage.findMany({ where: { candidateId: candidate.id, period } });
         return res.json(buildTalentUsageAnalytics({ subscription: candidate.subscription, usage }));
+    }
+
+    async function getPlanCatalog(req, res) {
+        const candidate = await prisma.candidate.findFirst({ where: { workspaceId: req.workspace.id, userId: req.user.id }, include: { subscription: true } });
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        return res.json(buildTalentPlanCatalog({ plan: candidate.subscription?.plan, status: candidate.subscription?.status }));
     }
 
     async function createResumeDraft(req, res) {
@@ -216,7 +223,7 @@ function createTalentController({ prisma }) {
         return res.json({ session: updated });
     }
 
-    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, createResumeDraft, createEngagementDraft, listDrafts, reviewDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
+    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, getPlanCatalog, createResumeDraft, createEngagementDraft, listDrafts, reviewDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
 }
 
 module.exports = { createTalentController };
