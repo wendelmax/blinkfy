@@ -14,6 +14,7 @@ const { consumeUsage } = require('../../services/blinkfy/talentUsageService');
 const { usageFeatureForDraft, periodKey } = require('../../services/blinkfy/talentDraftUsageService');
 const { transitionCandidateDraft } = require('../../services/blinkfy/talentDraftReviewService');
 const { buildTalentPlanCatalog } = require('../../services/blinkfy/talentPlanCatalogService');
+const { buildUpgradeIntent } = require('../../services/blinkfy/talentUpgradeService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -67,6 +68,16 @@ function createTalentController({ prisma }) {
         const candidate = await prisma.candidate.findFirst({ where: { workspaceId: req.workspace.id, userId: req.user.id }, include: { subscription: true } });
         if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
         return res.json(buildTalentPlanCatalog({ plan: candidate.subscription?.plan, status: candidate.subscription?.status }));
+    }
+
+    async function requestUpgrade(req, res) {
+        const candidate = await prisma.candidate.findFirst({ where: { workspaceId: req.workspace.id, userId: req.user.id }, include: { subscription: true } });
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        let intent;
+        try { intent = buildUpgradeIntent({ currentPlan: candidate.subscription?.plan }); }
+        catch (error) { return res.status(422).json({ message: error.message }); }
+        const audit = await recordAuditEvent({ prisma, workspaceId: req.workspace.id, actorUserId: req.user.id, entityType: 'candidate_upgrade_intent', entityId: `${candidate.id}:pro`, action: 'candidate.pro_upgrade_requested', metadata: { requestedPlan: intent.requestedPlan } });
+        return res.status(202).json({ intent: { id: audit.id, ...intent } });
     }
 
     async function createResumeDraft(req, res) {
@@ -226,7 +237,7 @@ function createTalentController({ prisma }) {
         return res.json({ session: updated });
     }
 
-    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, getPlanCatalog, createResumeDraft, createEngagementDraft, listDrafts, reviewDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
+    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, getPlanCatalog, requestUpgrade, createResumeDraft, createEngagementDraft, listDrafts, reviewDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
 }
 
 module.exports = { createTalentController };
