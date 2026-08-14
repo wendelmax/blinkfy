@@ -12,6 +12,7 @@ const { recommendConnections } = require('../../services/blinkfy/networkInsights
 const { buildTalentUsageAnalytics } = require('../../services/blinkfy/talentUsageAnalyticsService');
 const { consumeUsage } = require('../../services/blinkfy/talentUsageService');
 const { usageFeatureForDraft, periodKey } = require('../../services/blinkfy/talentDraftUsageService');
+const { transitionCandidateDraft } = require('../../services/blinkfy/talentDraftReviewService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -82,6 +83,22 @@ function createTalentController({ prisma }) {
         if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
         const drafts = await prisma.candidateDraft.findMany({ where: { candidateId: candidate.id }, orderBy: { createdAt: 'desc' }, take: 50 });
         return res.json({ items: drafts.map((draft) => ({ id: draft.id, kind: draft.kind, status: draft.status, payload: draft.payload, createdAt: draft.createdAt, updatedAt: draft.updatedAt })) });
+    }
+
+    async function reviewDraft(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        const draft = await prisma.candidateDraft.findFirst({ where: { id: req.params.draftId, candidateId: candidate.id } });
+        if (!draft) return res.status(404).json({ message: 'Draft not found' });
+        let status;
+        try { status = transitionCandidateDraft(draft.status, req.body?.status); }
+        catch (error) { return res.status(422).json({ message: error.message }); }
+        const updated = await prisma.$transaction(async (transaction) => {
+            const saved = await transaction.candidateDraft.update({ where: { id: draft.id }, data: { status } });
+            await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, actorUserId: req.user.id, entityType: 'candidate_draft', entityId: saved.id, action: `candidate.draft_${status}`, metadata: { kind: saved.kind } });
+            return saved;
+        });
+        return res.json({ draft: { id: updated.id, kind: updated.kind, status: updated.status, payload: updated.payload, createdAt: updated.createdAt, updatedAt: updated.updatedAt } });
     }
 
     async function patchProfile(req, res) {
@@ -199,7 +216,7 @@ function createTalentController({ prisma }) {
         return res.json({ session: updated });
     }
 
-    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, createResumeDraft, createEngagementDraft, listDrafts, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
+    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, createResumeDraft, createEngagementDraft, listDrafts, reviewDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
 }
 
 module.exports = { createTalentController };
