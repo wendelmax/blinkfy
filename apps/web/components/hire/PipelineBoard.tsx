@@ -13,6 +13,7 @@ import { ScreeningEvidenceForm } from './ScreeningEvidenceForm';
 import { InboundMessagePanel } from './InboundMessagePanel';
 import { FollowUpPanel } from './FollowUpPanel';
 import { AtsExportPreview } from './AtsExportPreview';
+import { CrmExportPreview } from './CrmExportPreview';
 
 type PipelineBoardProps = {
     jobId: string;
@@ -98,6 +99,7 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                                         <InboundMessagePanel jobId={jobId} applicationId={application.id} candidateName={application.fullName} />
                                         <FollowUpPanel jobId={jobId} applicationId={application.id} />
                                         <AtsExportPreview jobId={jobId} applicationId={application.id} />
+                                        <CrmExportPreview jobId={jobId} applicationId={application.id} />
                                         <MessageSuggestions jobId={jobId} applicationId={application.id} candidateName={application.fullName} />
                                         <button type="button" onClick={() => openDossier(application)}>Review screening dossier</button>
                                         {application.score ? <FitScoreCard score={application.score} /> : <p>Score not yet computed.</p>}
