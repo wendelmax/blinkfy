@@ -2,12 +2,14 @@ const express = require('express');
 const { createApplicationsController } = require('../../controllers/blinkfy/applicationsController');
 const { createMessageSuggestionsController } = require('../../controllers/blinkfy/messageSuggestionsController');
 const { createConciergeAtsExportController } = require('../../controllers/blinkfy/conciergeAtsExportController');
+const { createConciergeCrmExportController } = require('../../controllers/blinkfy/conciergeCrmExportController');
 
 function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     const router = express.Router({ mergeParams: true });
     const controller = createApplicationsController({ prisma });
     const messageSuggestions = createMessageSuggestionsController({ prisma });
     const atsExport = createConciergeAtsExportController({ prisma });
+    const crmExport = createConciergeCrmExportController({ prisma });
     const reviewer = requireWorkspaceRole('owner', 'admin', 'recruiter');
 
     router.get('/', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), controller.listApplications);
@@ -32,6 +34,7 @@ function createApplicationsRouter({ requireWorkspaceRole, prisma }) {
     router.post('/:applicationId/messages/grounded-draft', reviewer, messageSuggestions.generateGrounded);
     router.patch('/:applicationId/messages/:suggestionId', reviewer, messageSuggestions.decide);
     router.post('/:applicationId/ats-export-preview', reviewer, atsExport.preview);
+    router.post('/:applicationId/crm-export-preview', reviewer, crmExport.preview);
 
     return router;
 }
