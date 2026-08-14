@@ -1,5 +1,7 @@
 const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { validateWebhookSubscription } = require('../../services/blinkfy/conciergeWebhookSubscriptionService');
+const { signWebhookPayload } = require('../../services/blinkfy/conciergeWebhookSubscriptionService');
+const { buildWebhookEvent } = require('../../services/blinkfy/conciergeWebhookService');
 function createConciergeWebhookSubscriptionController({ prisma }) {
   async function get(req, res) { const item = await prisma.conciergeWebhookSubscription.findUnique({ where: { clientId: req.client.id } }); return res.json({ subscription: item && { ...item, secret: undefined } }); }
   async function update(req, res) {
@@ -11,6 +13,13 @@ function createConciergeWebhookSubscriptionController({ prisma }) {
     });
     return res.json({ subscription: { ...subscription, secret: undefined } });
   }
-  return { get, update };
+  async function preview(req, res) {
+    const subscription = await prisma.conciergeWebhookSubscription.findUnique({ where: { clientId: req.client.id } });
+    if (!subscription) return res.status(404).json({ message: 'Webhook subscription not found' });
+    let event; try { event = buildWebhookEvent(req.body); } catch (error) { return res.status(422).json({ message: error.message }); }
+    if (!subscription.events.includes(event.type)) return res.status(422).json({ message: 'Event is not enabled for this subscription' });
+    return res.json({ delivery: { url: subscription.url, eventId: event.id, eventType: event.type, signature: signWebhookPayload({ eventId: event.id, body: event, secret: subscription.secret }), approved: false, transmitted: false } });
+  }
+  return { get, update, preview };
 }
 module.exports = { createConciergeWebhookSubscriptionController };
