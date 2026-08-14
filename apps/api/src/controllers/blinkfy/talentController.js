@@ -56,8 +56,11 @@ function createTalentController({ prisma }) {
         if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
         const periodStart = candidate.subscription?.currentPeriodStart || new Date();
         const period = periodStart.toISOString().slice(0, 7);
-        const usage = await prisma.candidateUsage.findMany({ where: { candidateId: candidate.id, period } });
-        return res.json(buildTalentUsageAnalytics({ subscription: candidate.subscription, usage }));
+        const [usage, drafts] = await Promise.all([
+            prisma.candidateUsage.findMany({ where: { candidateId: candidate.id, period } }),
+            prisma.candidateDraft.findMany({ where: { candidateId: candidate.id }, select: { kind: true, status: true } }),
+        ]);
+        return res.json(buildTalentUsageAnalytics({ subscription: candidate.subscription, usage, drafts }));
     }
 
     async function getPlanCatalog(req, res) {
