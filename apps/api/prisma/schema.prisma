@@ -235,6 +235,7 @@ model Client {
   consents         CandidateConsent[]
   applications     CandidateApplication[]
   knowledgeDocuments KnowledgeDocument[]
+  conciergeSchedulingPolicy ConciergeSchedulingPolicy?
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 }
@@ -554,6 +555,17 @@ model KnowledgeChunk {
   document   KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
   @@unique([documentId, position])
   @@map("knowledge_chunks")
+}
+
+model ConciergeSchedulingPolicy {
+  id        String   @id @default(cuid())
+  clientId  String   @unique
+  timezone  String
+  windows   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  @@map("concierge_scheduling_policies")
 }
 
 enum ScreeningSessionStatus {
