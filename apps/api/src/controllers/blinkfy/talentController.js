@@ -8,6 +8,7 @@ const { getCandidatePositioningAnalytics } = require('../../services/blinkfy/tal
 const { buildResumeDraft } = require('../../services/blinkfy/talentResumeDraftService');
 const { buildEngagementDraft } = require('../../services/blinkfy/talentEngagementDraftService');
 const { transitionScreeningSession } = require('../../services/blinkfy/screeningSessionService');
+const { recommendConnections } = require('../../services/blinkfy/networkInsightsService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -28,6 +29,18 @@ function createTalentController({ prisma }) {
         });
         if (!analytics) return res.status(404).json({ message: 'Candidate profile not found' });
         return res.json(analytics);
+    }
+
+    async function listNetworkRecommendations(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        const profile = candidate.profile && typeof candidate.profile === 'object' ? candidate.profile : {};
+        const connections = Array.isArray(profile.connections) ? profile.connections : [];
+        return res.json({ items: recommendConnections({
+            connections,
+            targetRole: candidate.targetRole,
+            skills: [...candidate.skills, ...(Array.isArray(profile.skills) ? profile.skills : [])],
+        }) });
     }
 
     async function createResumeDraft(req, res) {
@@ -158,7 +171,7 @@ function createTalentController({ prisma }) {
         return res.json({ session: updated });
     }
 
-    return { getProfile, getPositioningAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
+    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
 }
 
 module.exports = { createTalentController };

@@ -32,6 +32,13 @@ export interface TalentDraft {
     [key: string]: unknown;
 }
 
+export interface TalentNetworkRecommendation {
+    id: string;
+    name: string;
+    role: string;
+    requiresApproval: true;
+}
+
 export type FitScore = SharedFitScore;
 
 export interface BlinkfyJob {

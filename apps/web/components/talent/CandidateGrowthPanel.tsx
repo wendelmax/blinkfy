@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { ApiError, apiFetch } from '../../lib/api';
-import type { TalentDraft, TalentPositioningAnalytics } from '../../lib/types';
+import type { TalentDraft, TalentNetworkRecommendation, TalentPositioningAnalytics } from '../../lib/types';
 
 const ACTION_LABELS: Record<string, string> = {
     targetRole: 'target role',
@@ -24,6 +24,17 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
     const [engagementDraft, setEngagementDraft] = useState<TalentDraft | null>(null);
     const [busy, setBusy] = useState<'resume' | 'engagement' | null>(null);
     const [error, setError] = useState('');
+    const [recommendations, setRecommendations] = useState<TalentNetworkRecommendation[]>([]);
+    const [networkLoaded, setNetworkLoaded] = useState(false);
+
+    async function loadRecommendations() {
+        setError('');
+        try {
+            const result = await apiFetch<{ items: TalentNetworkRecommendation[] }>('/api/blinkfy/talent/network/recommendations');
+            setRecommendations(result.items);
+            setNetworkLoaded(true);
+        } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Network recommendations could not be loaded.'); }
+    }
 
     async function createResumeDraft() {
         setBusy('resume');
@@ -81,6 +92,13 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
             </select>
             <button type="submit" disabled={busy !== null}>{busy === 'engagement' ? 'Creating…' : 'Create engagement draft'}</button>
         </form>
+
+        <section aria-labelledby="value-network-heading" style={{ marginTop: 16 }}>
+            <h3 id="value-network-heading">Value network suggestions</h3>
+            <p>These are private recommendations. Nothing is contacted or published automatically.</p>
+            <button type="button" onClick={() => void loadRecommendations()}>Find relevant connections</button>
+            {networkLoaded && (recommendations.length === 0 ? <p>No matching connections found.</p> : <ul>{recommendations.map((recommendation) => <li key={recommendation.id}><strong>{recommendation.name}</strong> · {recommendation.role} <small>· approval required</small></li>)}</ul>)}
+        </section>
 
         {error && <p role="alert">{error}</p>}
         {resumeDraft && <article aria-label="Resume draft" style={{ marginTop: 16 }}><h3>Resume draft</h3><p>{String(resumeDraft.summary ?? 'No summary generated.')}</p><small>Draft only · review before using</small></article>}
