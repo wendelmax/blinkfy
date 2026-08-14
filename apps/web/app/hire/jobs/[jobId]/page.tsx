@@ -10,6 +10,7 @@ import { UnifiedInbox } from '../../../../components/hire/UnifiedInbox';
 import { SchedulingPolicyPanel } from '../../../../components/hire/SchedulingPolicyPanel';
 import { WebhookSubscriptionPanel } from '../../../../components/hire/WebhookSubscriptionPanel';
 import { IntegrationCatalogPanel } from '../../../../components/hire/IntegrationCatalogPanel';
+import { McpManifestPanel } from '../../../../components/hire/McpManifestPanel';
 import { apiFetch, ApiError, getActiveClientId } from '../../../../lib/api';
 import type { BlinkfyJob, PipelineApplication } from '../../../../lib/types';
 
@@ -62,6 +63,7 @@ export default function JobPipelinePage() {
                 <SchedulingPolicyPanel clientId={job.clientId} />
                 <WebhookSubscriptionPanel clientId={job.clientId} />
                 <IntegrationCatalogPanel clientId={job.clientId} />
+                <McpManifestPanel clientId={job.clientId} />
                 <PipelineBoard jobId={job.id} applications={applications} />
             </>}
         </main>
