@@ -22,4 +22,12 @@ function buildCalendarPreview({ policy } = {}) {
   return { timezone: policy.timezone, slots: suggestSlots({ candidates: policy.windows }), requiresApproval: true, scheduled: false, transmitted: false };
 }
 
-module.exports = { MAX_SUGGESTIONS, validateSchedulingPolicy, suggestSlots, buildCalendarPreview };
+function validateApprovalRequest({ policy, start, end } = {}) {
+  const candidateStart = new Date(start); const candidateEnd = new Date(end);
+  if (Number.isNaN(candidateStart.getTime()) || Number.isNaN(candidateEnd.getTime()) || candidateEnd <= candidateStart) throw new Error('slot must be a valid positive interval');
+  const allowed = (policy?.windows || []).some((window) => candidateStart >= new Date(window.start) && candidateEnd <= new Date(window.end));
+  if (!allowed) throw new Error('slot is outside the configured scheduling windows');
+  return { start: candidateStart.toISOString(), end: candidateEnd.toISOString() };
+}
+
+module.exports = { MAX_SUGGESTIONS, validateSchedulingPolicy, suggestSlots, buildCalendarPreview, validateApprovalRequest };
