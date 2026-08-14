@@ -1,9 +1,11 @@
 const express = require('express');
 const { createJobsController } = require('../../controllers/blinkfy/jobsController');
+const { createConciergeInboxController } = require('../../controllers/blinkfy/conciergeInboxController');
 
 function createJobsRouter({ requireWorkspaceRole, requireClientAccess, prisma }) {
     const router = express.Router({ mergeParams: true });
     const jobsController = createJobsController({ prisma });
+    const inboxController = createConciergeInboxController({ prisma });
 
     router.get(
         '/',
@@ -17,6 +19,7 @@ function createJobsRouter({ requireWorkspaceRole, requireClientAccess, prisma })
         requireClientAccess,
         jobsController.createManualJob,
     );
+    router.get('/:jobId/inbox', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, inboxController.list);
     router.post(
         '/import',
         requireWorkspaceRole('owner', 'admin', 'recruiter'),
