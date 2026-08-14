@@ -9,6 +9,7 @@ function createConciergeRouter({ requireWorkspaceRole, requireClientAccess, pris
   const controller = createConciergeSchedulingController({ prisma });
   router.get('/scheduling-policy', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, controller.get);
   router.put('/scheduling-policy', requireWorkspaceRole('owner', 'admin', 'recruiter'), requireClientAccess, controller.update);
+  router.get('/calendar/preview', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, controller.preview);
   router.get('/integrations', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, (req, res) => res.json({ items: buildIntegrationCatalog() }));
   router.get('/mcp/manifest', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, (req, res) => res.json(buildMcpManifest()));
   router.post('/mcp/preview', requireWorkspaceRole('owner', 'admin', 'recruiter'), requireClientAccess, async (req, res) => {
