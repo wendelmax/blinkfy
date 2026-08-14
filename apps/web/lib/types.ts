@@ -47,6 +47,15 @@ export interface TalentUsageAnalytics {
     entitlements: string[];
 }
 
+export interface TalentDraftHistoryItem {
+    id: string;
+    kind: string;
+    status: 'pending' | 'approved' | 'rejected';
+    payload: Record<string, unknown>;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export type FitScore = SharedFitScore;
 
 export interface BlinkfyJob {

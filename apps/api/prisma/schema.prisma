@@ -350,6 +350,7 @@ model Candidate {
   applications          CandidateApplication[]
   subscription          CandidateSubscription?
   usage                 CandidateUsage[]
+  drafts                CandidateDraft[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
@@ -534,6 +535,26 @@ model ConciergeMessage {
   suggestions       MessageSuggestion[]
   @@index([applicationId, receivedAt])
   @@map("concierge_messages")
+}
+
+enum CandidateDraftStatus {
+  pending
+  approved
+  rejected
+}
+
+model CandidateDraft {
+  id          String              @id @default(cuid())
+  candidateId String
+  kind        String
+  payload     Json
+  status      CandidateDraftStatus @default(pending)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  candidate   Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId, createdAt])
+  @@map("candidate_drafts")
 }
 
 model ConciergeFollowUpSequence {
