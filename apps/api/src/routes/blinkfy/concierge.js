@@ -18,6 +18,10 @@ function createConciergeRouter({ requireWorkspaceRole, requireClientAccess, pris
       return res.json({ preview });
     } catch (error) { return res.status(422).json({ message: error.message }); }
   });
+  router.get('/mcp/audit', requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), requireClientAccess, async (req, res) => {
+    const items = await prisma.auditEvent.findMany({ where: { workspaceId: req.workspace.id, clientId: req.client.id, entityType: 'concierge_mcp_preview' }, orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, actorUserId: true, action: true, metadata: true, createdAt: true } });
+    return res.json({ items });
+  });
   return router;
 }
 module.exports = { createConciergeRouter };
