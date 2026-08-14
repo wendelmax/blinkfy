@@ -5,6 +5,7 @@ const { validateEvidenceInput, findLatestDossierSession } = require('../../servi
 const { summarizeScreening } = require('../../services/blinkfy/screeningSummaryService');
 const { validateRecruiterFeedback } = require('../../services/blinkfy/conciergeFeedbackService');
 const { findExpiredEvidence } = require('../../services/blinkfy/screeningRetentionService');
+const { validateFollowUpConfig, buildFollowUpPlan } = require('../../services/blinkfy/conciergeService');
 
 const allowedTransitions = {
     mapped: ['reviewed'],
@@ -172,6 +173,22 @@ function createApplicationsController({ prisma }) {
         const items = await prisma.conciergeMessage.findMany({ where: { applicationId: application.id }, orderBy: { receivedAt: 'desc' } });
         return res.json({ items });
     }
+    async function getFollowUp(req, res) {
+        const application = await getScreeningApplication(req);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        return res.json({ sequence: await prisma.conciergeFollowUpSequence.findUnique({ where: { applicationId: application.id } }) });
+    }
+    async function configureFollowUp(req, res) {
+        const application = await getScreeningApplication(req);
+        if (!application) return res.status(404).json({ message: 'Application not found' });
+        let config; try { config = validateFollowUpConfig(req.body); } catch (error) { return res.status(422).json({ message: error.message }); }
+        const sequence = await prisma.$transaction(async (transaction) => {
+            const saved = await transaction.conciergeFollowUpSequence.upsert({ where: { applicationId: application.id }, create: { applicationId: application.id, delaysInDays: config.delaysInDays }, update: { delaysInDays: config.delaysInDays, status: 'active', interruptedAt: null } });
+            await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, clientId: application.clientId, actorUserId: req.user.id, entityType: 'concierge_follow_up', entityId: saved.id, action: 'concierge.follow_up_configured', metadata: { delaysInDays: config.delaysInDays, requiresApproval: true } });
+            return saved;
+        });
+        return res.json({ sequence, plan: buildFollowUpPlan({ config, now: new Date() }) });
+    }
     async function createScreeningFeedback(req, res) {
         const application = await getScreeningApplication(req);
         if (!application) return res.status(404).json({ message: 'Application not found' });
@@ -289,7 +306,7 @@ function createApplicationsController({ prisma }) {
         return res.json({ application: serializeApplication({ ...application, scoreSnapshot: snapshot }), score: serializeScore(snapshot) });
     }
 
-    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, startScreening, completeScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier, listScreeningFeedback, createScreeningFeedback, listConciergeMessages };
+    return { listApplications, recomputeScore, updateStage, overrideScore, inviteScreening, consentScreening, scheduleScreening, startScreening, completeScreening, withdrawScreening, addScreeningEvidence, getScreeningDossier, listScreeningFeedback, createScreeningFeedback, listConciergeMessages, getFollowUp, configureFollowUp };
 }
 
 module.exports = { createApplicationsController, allowedTransitions, serializeApplication };
