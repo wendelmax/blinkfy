@@ -71,9 +71,17 @@ function createTalentController({ prisma }) {
             const draft = buildEngagementDraft(req.body);
             const feature = usageFeatureForDraft(req.body?.format);
             if (feature) await consumeUsage({ prisma, candidateId: candidate.id, feature, plan: candidate.subscription?.plan === 'pro' ? 'pro' : 'free', period: periodKey() });
-            return res.status(201).json({ draft });
+            const saved = await prisma.candidateDraft.create({ data: { candidateId: candidate.id, kind: draft.format, payload: draft } });
+            return res.status(201).json({ draft, draftId: saved.id });
         }
         catch (error) { return res.status(422).json({ message: error.message }); }
+    }
+
+    async function listDrafts(req, res) {
+        const candidate = await resolveCandidate(req);
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        const drafts = await prisma.candidateDraft.findMany({ where: { candidateId: candidate.id }, orderBy: { createdAt: 'desc' }, take: 50 });
+        return res.json({ items: drafts.map((draft) => ({ id: draft.id, kind: draft.kind, status: draft.status, payload: draft.payload, createdAt: draft.createdAt, updatedAt: draft.updatedAt })) });
     }
 
     async function patchProfile(req, res) {
@@ -191,7 +199,7 @@ function createTalentController({ prisma }) {
         return res.json({ session: updated });
     }
 
-    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
+    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, createResumeDraft, createEngagementDraft, listDrafts, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
 }
 
 module.exports = { createTalentController };

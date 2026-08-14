@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { ApiError, apiFetch } from '../../lib/api';
-import type { TalentDraft, TalentNetworkRecommendation, TalentPositioningAnalytics, TalentUsageAnalytics } from '../../lib/types';
+import type { TalentDraft, TalentDraftHistoryItem, TalentNetworkRecommendation, TalentPositioningAnalytics, TalentUsageAnalytics } from '../../lib/types';
 
 const ACTION_LABELS: Record<string, string> = {
     targetRole: 'target role',
@@ -27,6 +27,7 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
     const [recommendations, setRecommendations] = useState<TalentNetworkRecommendation[]>([]);
     const [networkLoaded, setNetworkLoaded] = useState(false);
     const [usage, setUsage] = useState<TalentUsageAnalytics | null>(null);
+    const [history, setHistory] = useState<TalentDraftHistoryItem[]>([]);
 
     async function loadRecommendations() {
         setError('');
@@ -41,6 +42,12 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         setError('');
         try { setUsage(await apiFetch<TalentUsageAnalytics>('/api/blinkfy/talent/analytics/usage')); }
         catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Usage analytics could not be loaded.'); }
+    }
+
+    async function loadHistory() {
+        setError('');
+        try { const result = await apiFetch<{ items: TalentDraftHistoryItem[] }>('/api/blinkfy/talent/drafts'); setHistory(result.items); }
+        catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Draft history could not be loaded.'); }
     }
 
     async function createResumeDraft() {
@@ -111,6 +118,12 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
             <h3 id="talent-usage-heading">Plan usage</h3>
             <button type="button" onClick={() => void loadUsage()}>View plan usage</button>
             {usage && <div role="status"><p>Plan: {usage.plan} · Status: {usage.status}</p><ul>{usage.usage.map((item) => <li key={item.feature}>{item.feature}: {item.used}/{item.limit} used · {item.remaining} remaining</li>)}</ul></div>}
+        </section>
+
+        <section aria-labelledby="talent-draft-history-heading" style={{ marginTop: 16 }}>
+            <h3 id="talent-draft-history-heading">Draft history</h3>
+            <button type="button" onClick={() => void loadHistory()}>View saved drafts</button>
+            {history.length > 0 && <ul>{history.map((item) => <li key={item.id}>{item.kind} · {item.status} · {new Date(item.createdAt).toLocaleDateString()}</li>)}</ul>}
         </section>
 
         {error && <p role="alert">{error}</p>}

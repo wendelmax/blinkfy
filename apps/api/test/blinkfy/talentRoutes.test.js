@@ -79,6 +79,10 @@ test('candidate can generate approval-gated resume and engagement drafts', async
     const engagement = await api(value, 'post', '/api/blinkfy/talent/drafts/engagement').send({ topic: 'distributed systems', format: 'post' });
     expect(engagement.status).toBe(201);
     expect(engagement.body.draft).toMatchObject({ topic: 'distributed systems', requiresApproval: true, published: false });
+    expect(engagement.body.draftId).toEqual(expect.any(String));
+    const history = await api(value, 'get', '/api/blinkfy/talent/drafts');
+    expect(history.status).toBe(200);
+    expect(history.body.items[0]).toMatchObject({ id: engagement.body.draftId, kind: 'post', status: 'pending' });
 });
 
 test('candidate can view approval-gated value network recommendations', async () => {
