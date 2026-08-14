@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { ApiError, apiFetch } from '../../lib/api';
-import type { TalentDraft, TalentNetworkRecommendation, TalentPositioningAnalytics } from '../../lib/types';
+import type { TalentDraft, TalentNetworkRecommendation, TalentPositioningAnalytics, TalentUsageAnalytics } from '../../lib/types';
 
 const ACTION_LABELS: Record<string, string> = {
     targetRole: 'target role',
@@ -26,6 +26,7 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
     const [error, setError] = useState('');
     const [recommendations, setRecommendations] = useState<TalentNetworkRecommendation[]>([]);
     const [networkLoaded, setNetworkLoaded] = useState(false);
+    const [usage, setUsage] = useState<TalentUsageAnalytics | null>(null);
 
     async function loadRecommendations() {
         setError('');
@@ -34,6 +35,12 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
             setRecommendations(result.items);
             setNetworkLoaded(true);
         } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Network recommendations could not be loaded.'); }
+    }
+
+    async function loadUsage() {
+        setError('');
+        try { setUsage(await apiFetch<TalentUsageAnalytics>('/api/blinkfy/talent/analytics/usage')); }
+        catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Usage analytics could not be loaded.'); }
     }
 
     async function createResumeDraft() {
@@ -98,6 +105,12 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
             <p>These are private recommendations. Nothing is contacted or published automatically.</p>
             <button type="button" onClick={() => void loadRecommendations()}>Find relevant connections</button>
             {networkLoaded && (recommendations.length === 0 ? <p>No matching connections found.</p> : <ul>{recommendations.map((recommendation) => <li key={recommendation.id}><strong>{recommendation.name}</strong> · {recommendation.role} <small>· approval required</small></li>)}</ul>)}
+        </section>
+
+        <section aria-labelledby="talent-usage-heading" style={{ marginTop: 16 }}>
+            <h3 id="talent-usage-heading">Plan usage</h3>
+            <button type="button" onClick={() => void loadUsage()}>View plan usage</button>
+            {usage && <div role="status"><p>Plan: {usage.plan} · Status: {usage.status}</p><ul>{usage.usage.map((item) => <li key={item.feature}>{item.feature}: {item.used}/{item.limit} used · {item.remaining} remaining</li>)}</ul></div>}
         </section>
 
         {error && <p role="alert">{error}</p>}

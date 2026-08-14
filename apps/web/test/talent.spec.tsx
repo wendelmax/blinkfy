@@ -54,6 +54,7 @@ describe('Blinkfy Talent workspace', () => {
         expect(markup).toContain('Create engagement draft');
         expect(markup).toContain('Find relevant connections');
         expect(markup).toContain('Nothing is contacted or published automatically');
+        expect(markup).toContain('View plan usage');
         expect(markup).toContain('requires your approval');
     });
 });
