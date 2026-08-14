@@ -81,6 +81,25 @@ test('candidate can generate approval-gated resume and engagement drafts', async
     expect(engagement.body.draft).toMatchObject({ topic: 'distributed systems', requiresApproval: true, published: false });
 });
 
+test('candidate can view approval-gated value network recommendations', async () => {
+    const value = await contextFactory('network');
+    await prisma.candidate.update({ where: { id: value.candidate.id }, data: {
+        targetRole: 'Backend Engineer',
+        skills: ['GraphQL'],
+        profile: { connections: [
+            { id: 'n1', name: 'Ada Lovelace', role: 'Senior Backend Engineer', skills: [] },
+            { id: 'n2', name: 'Private Contact', role: 'Designer', skills: ['GraphQL'], email: 'hidden@example.test' },
+        ] },
+    } });
+    const response = await api(value, 'get', '/api/blinkfy/talent/network/recommendations');
+    expect(response.status).toBe(200);
+    expect(response.body.items).toEqual([
+        { id: 'n1', name: 'Ada Lovelace', role: 'Senior Backend Engineer', requiresApproval: true },
+        { id: 'n2', name: 'Private Contact', role: 'Designer', requiresApproval: true },
+    ]);
+    expect(response.body.items[1]).not.toHaveProperty('email');
+});
+
 test('candidate engagement drafts reject invalid topics', async () => {
     const value = await contextFactory('invalid-draft');
     const response = await api(value, 'post', '/api/blinkfy/talent/drafts/engagement').send({ topic: '', format: 'post' });
