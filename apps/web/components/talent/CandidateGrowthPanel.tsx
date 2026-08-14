@@ -50,6 +50,14 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Draft history could not be loaded.'); }
     }
 
+    async function reviewDraft(id: string, status: 'approved' | 'rejected') {
+        setError('');
+        try {
+            const result = await apiFetch<{ draft: TalentDraftHistoryItem }>(`/api/blinkfy/talent/drafts/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+            setHistory((current) => current.map((item) => item.id === id ? result.draft : item));
+        } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Draft review could not be saved.'); }
+    }
+
     async function createResumeDraft() {
         setBusy('resume');
         setError('');
@@ -123,7 +131,7 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         <section aria-labelledby="talent-draft-history-heading" style={{ marginTop: 16 }}>
             <h3 id="talent-draft-history-heading">Draft history</h3>
             <button type="button" onClick={() => void loadHistory()}>View saved drafts</button>
-            {history.length > 0 && <ul>{history.map((item) => <li key={item.id}>{item.kind} · {item.status} · {new Date(item.createdAt).toLocaleDateString()}</li>)}</ul>}
+            {history.length > 0 && <ul>{history.map((item) => <li key={item.id}>{item.kind} · {item.status} · {new Date(item.createdAt).toLocaleDateString()} {item.status === 'pending' && <><button type="button" onClick={() => void reviewDraft(item.id, 'approved')}>Approve</button><button type="button" onClick={() => void reviewDraft(item.id, 'rejected')}>Reject</button></>}</li>)}</ul>}
         </section>
 
         {error && <p role="alert">{error}</p>}
