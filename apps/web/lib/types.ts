@@ -39,6 +39,14 @@ export interface TalentNetworkRecommendation {
     requiresApproval: true;
 }
 
+export interface TalentUsageAnalytics {
+    plan: 'free' | 'pro';
+    status: string;
+    period: { start: string | null; end: string | null };
+    usage: { feature: string; used: number; limit: number; remaining: number }[];
+    entitlements: string[];
+}
+
 export type FitScore = SharedFitScore;
 
 export interface BlinkfyJob {

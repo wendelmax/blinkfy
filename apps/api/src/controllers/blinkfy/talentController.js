@@ -9,6 +9,7 @@ const { buildResumeDraft } = require('../../services/blinkfy/talentResumeDraftSe
 const { buildEngagementDraft } = require('../../services/blinkfy/talentEngagementDraftService');
 const { transitionScreeningSession } = require('../../services/blinkfy/screeningSessionService');
 const { recommendConnections } = require('../../services/blinkfy/networkInsightsService');
+const { buildTalentUsageAnalytics } = require('../../services/blinkfy/talentUsageAnalyticsService');
 
 function createTalentController({ prisma }) {
     async function resolveCandidate(req) {
@@ -41,6 +42,18 @@ function createTalentController({ prisma }) {
             targetRole: candidate.targetRole,
             skills: [...candidate.skills, ...(Array.isArray(profile.skills) ? profile.skills : [])],
         }) });
+    }
+
+    async function getUsageAnalytics(req, res) {
+        const candidate = await prisma.candidate.findFirst({
+            where: { workspaceId: req.workspace.id, userId: req.user.id },
+            include: { subscription: true },
+        });
+        if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
+        const periodStart = candidate.subscription?.currentPeriodStart || new Date();
+        const period = periodStart.toISOString().slice(0, 7);
+        const usage = await prisma.candidateUsage.findMany({ where: { candidateId: candidate.id, period } });
+        return res.json(buildTalentUsageAnalytics({ subscription: candidate.subscription, usage }));
     }
 
     async function createResumeDraft(req, res) {
@@ -171,7 +184,7 @@ function createTalentController({ prisma }) {
         return res.json({ session: updated });
     }
 
-    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
+    return { getProfile, getPositioningAnalytics, listNetworkRecommendations, getUsageAnalytics, createResumeDraft, createEngagementDraft, patchProfile, patchVisibility, listConsents, revokeConsent, listScreeningInvitations, consentToScreening, withdrawScreeningConsent };
 }
 
 module.exports = { createTalentController };
