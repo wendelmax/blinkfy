@@ -2,7 +2,7 @@ const { recordAuditEvent } = require('../../services/blinkfy/auditService');
 const { validateWebhookSubscription } = require('../../services/blinkfy/conciergeWebhookSubscriptionService');
 const { signWebhookPayload } = require('../../services/blinkfy/conciergeWebhookSubscriptionService');
 const { buildWebhookEvent } = require('../../services/blinkfy/conciergeWebhookService');
-const { buildOutboxRecord } = require('../../services/blinkfy/conciergeWebhookOutboxService');
+const { buildOutboxRecord, transitionOutboxReview } = require('../../services/blinkfy/conciergeWebhookOutboxService');
 function createConciergeWebhookSubscriptionController({ prisma }) {
   async function get(req, res) { const item = await prisma.conciergeWebhookSubscription.findUnique({ where: { clientId: req.client.id } }); return res.json({ subscription: item && { ...item, secret: undefined } }); }
   async function update(req, res) {
@@ -25,6 +25,17 @@ function createConciergeWebhookSubscriptionController({ prisma }) {
     return res.json({ delivery: { url: subscription.url, eventId: event.id, eventType: event.type, signature, approved: false, transmitted: false, outboxId: outbox.id, status: outbox.status } });
   }
   async function listOutbox(req, res) { const items = await prisma.conciergeWebhookOutbox.findMany({ where: { clientId: req.client.id }, orderBy: { createdAt: 'desc' }, take: 50 }); return res.json({ items }); }
-  return { get, update, preview, listOutbox };
+  async function reviewOutbox(req, res) {
+    const item = await prisma.conciergeWebhookOutbox.findFirst({ where: { id: req.params.outboxId, clientId: req.client.id } });
+    if (!item) return res.status(404).json({ message: 'Webhook outbox item not found' });
+    let status; try { status = transitionOutboxReview(item.status, req.body?.status); } catch (error) { return res.status(422).json({ message: error.message }); }
+    const updated = await prisma.$transaction(async (transaction) => {
+      const saved = await transaction.conciergeWebhookOutbox.update({ where: { id: item.id }, data: { status } });
+      await recordAuditEvent({ prisma: transaction, workspaceId: req.workspace.id, clientId: req.client.id, actorUserId: req.user.id, entityType: 'concierge_webhook_outbox', entityId: saved.id, action: `concierge.webhook_outbox_${status}`, metadata: { eventType: saved.eventType } });
+      return saved;
+    });
+    return res.json({ item: updated, transmitted: false });
+  }
+  return { get, update, preview, listOutbox, reviewOutbox };
 }
 module.exports = { createConciergeWebhookSubscriptionController };
