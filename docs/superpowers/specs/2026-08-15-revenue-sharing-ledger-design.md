@@ -20,6 +20,10 @@ The first release calculates allocation previews, confirms one immutable allocat
 
 ## Domain Model
 
+`MarketplacePlacement` is the multi-tenant source record for revenue allocation. It is separate from the legacy `Placement` model, which uses floating-point USD fields and has no workspace/client ownership. A marketplace placement contains `workspaceId`, `clientId`, `applicationId`, `recruiterUserId`, `status`, and timestamps. The application must belong to the same client and workspace and must be in the `shortlisted` stage before an owner or admin confirms the placement. Confirmation moves the application to a new terminal `hired` stage in the same transaction. There is at most one marketplace placement per application.
+
+The legacy `Placement` and `WalletTransaction` models are not read, written, or migrated by this feature.
+
 `PlacementRevenueAllocation` is append-only business evidence with:
 
 - `id`
