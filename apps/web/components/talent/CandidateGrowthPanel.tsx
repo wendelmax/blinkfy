@@ -141,7 +141,7 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         <section aria-labelledby="talent-usage-heading" style={{ marginTop: 16 }}>
             <h3 id="talent-usage-heading">Plan usage</h3>
             <button type="button" onClick={() => void loadUsage()}>View plan usage</button>
-            {usage && <div role="status"><p>Plan: {usage.plan} · Status: {usage.status}</p><ul>{usage.usage.map((item) => <li key={item.feature}>{item.feature}: {item.used}/{item.limit} used · {item.remaining} remaining</li>)}</ul></div>}
+            {usage && <div role="status"><p>Plan: {usage.plan} · Status: {usage.status}</p><ul>{usage.usage.map((item) => <li key={item.feature}>{item.feature}: {item.used}/{item.limit} used · {item.remaining} remaining</li>)}</ul><p>Draft performance: {usage.drafts.total} total · {usage.drafts.byStatus.pending} pending · {usage.drafts.byStatus.approved} approved · {usage.drafts.byStatus.rejected} rejected</p></div>}
         </section>
 
         <section aria-labelledby="talent-draft-history-heading" style={{ marginTop: 16 }}>

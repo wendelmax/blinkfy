@@ -45,6 +45,7 @@ export interface TalentUsageAnalytics {
     period: { start: string | null; end: string | null };
     usage: { feature: string; used: number; limit: number; remaining: number }[];
     entitlements: string[];
+    drafts: { total: number; byStatus: { pending: number; approved: number; rejected: number }; byKind: Record<string, number> };
 }
 
 export interface TalentDraftHistoryItem {
