@@ -2,7 +2,7 @@
 
 ## Result
 
-Implemented the Task 2 schema from base commit `36aad20` without modifying the legacy `Placement`, `WalletTransaction`, or payment service code.
+Implemented the Task 2 schema from base commit `36aad20` and the first review-fix round without modifying the legacy `Placement`, `WalletTransaction`, or payment service code.
 
 The migration adds:
 
@@ -16,26 +16,32 @@ The migration adds:
 - Composite foreign keys bind placement workspace/client/application/recruiter membership.
 - Composite foreign keys bind allocation workspace/client/recruiter fields to its placement and workspace membership.
 - All new foreign keys use `ON DELETE RESTRICT` and `ON UPDATE NO ACTION`, preserving the evidence chain.
-- PostgreSQL enforces positive gross amounts, basis-point ranges and total, 70/30 defaults, deterministic truncation, platform residual, nonnegative allocation amounts, exact amount totals, uppercase three-letter currencies, same-currency ledger entries, status timestamps, and ledger signs/magnitudes.
+- PostgreSQL enforces positive gross amounts, independently named basis-point ranges and total, 70/30 defaults, deterministic truncation, platform residual, nonnegative allocation amounts, exact amount totals, uppercase three-letter currencies, same-currency ledger entries, status timestamps, and ledger signs/magnitudes.
+- A ledger insert locks its allocation row with `SELECT ... FOR UPDATE` before validating amounts or currency. Concurrent allocation updates therefore serialize with ledger creation in either order.
 - Unique indexes enforce one placement per application, one allocation per placement, and one ledger entry of each kind per allocation (therefore one reversal).
 - Ledger rows reject all `UPDATE` and `DELETE` operations.
 - Allocation tenant, currency, gross, basis-point, and split fields become immutable after the first ledger entry while lifecycle status/timestamps remain mutable.
 
 ## TDD Evidence
 
-RED:
+Initial RED:
 
 `TEST_DATABASE_URL="$TEST_DATABASE_URL" npm run test --workspace=apps/api -- revenueSharingSchema.test.js`
 
-After resetting the database to the base migrations, all seven tests failed for the expected missing contracts: `ApplicationStage.hired` was invalid and the new Prisma models were absent.
+After resetting the database to the base migrations, all seven original tests failed for the expected missing contracts: `ApplicationStage.hired` was invalid and the new Prisma models were absent.
+
+Review RED:
+
+- The recruiter range case reported `revenue_allocations_basis_points_total_check` instead of its exact range constraint.
+- The ledger insert completed while an allocation financial UPDATE still held its row lock, reproducing the inconsistent race.
 
 GREEN:
 
 `TEST_DATABASE_URL="$TEST_DATABASE_URL" npm run test --workspace=apps/api -- revenueSharingSchema.test.js`
 
-Result: 1 file passed, 7 tests passed.
+Result: 1 file passed, 9 tests passed.
 
-The focused tests cover tenant mismatches, exact lifecycle/default values, check constraints, placement/allocation/ledger uniqueness, one reversal, same currency, signs and magnitudes, allocation immutability, append-only ledger behavior, cascading parent deletions stopped by exact RESTRICT constraints, and NO ACTION updates.
+The focused tests cover tenant mismatches, exact lifecycle/default values, independently named recruiter/platform range constraints, remaining check constraints, placement/allocation/ledger uniqueness, one reversal, same currency, signs and magnitudes, allocation immutability for tenant/currency/gross/BP/split fields, append-only ledger behavior, both concurrent ledger/allocation orderings, cascading parent deletions stopped by exact RESTRICT constraints, and NO ACTION updates.
 
 The RESTRICT helper explicitly accepts:
 
@@ -51,12 +57,12 @@ Every accepted shape must expose the exact expected constraint name; no generic 
 - Prisma validate: passed.
 - Disposable database reset: passed; all 23 migrations applied, including `20260815010000_marketplace_revenue_sharing`.
 - Prisma Client generation 5.22.0: passed.
-- Relevant regression set (`revenueSharingSchema`, `revenueSplitService`, `workspace`, `pipeline`): 4 files passed, 33 tests passed.
-- Full API suite: 69 files passed, 192 tests passed.
+- Focused schema suite: 1 file passed, 9 tests passed.
+- Full API suite: 69 files passed, 194 tests passed.
 - Migration status: database schema up to date.
 - `git diff --check`: passed.
 - New PostgreSQL identifiers: all at most 63 bytes.
-- Schema self-review: 103 additions and zero removals; legacy financial models remain byte-identical.
+- Schema self-review: 103 additions and zero removals from the base; legacy financial models remain byte-identical.
 
 ## Concerns
 

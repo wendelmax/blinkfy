@@ -206,7 +206,8 @@ test('enforces allocation uniqueness, basis-point bounds, deterministic split, r
 
     const invalidCases = [
         ['revenue_allocations_gross_positive_check', { grossAmountMinor: 0, recruiterAmountMinor: 0, platformAmountMinor: 0 }],
-        ['revenue_allocations_platform_bps_range_check', { recruiterBasisPoints: -1, platformBasisPoints: 10001 }],
+        ['revenue_allocations_recruiter_bps_range_check', { recruiterBasisPoints: -1, platformBasisPoints: 3000 }],
+        ['revenue_allocations_platform_bps_range_check', { recruiterBasisPoints: 7000, platformBasisPoints: 10001 }],
         ['revenue_allocations_basis_points_total_check', { recruiterBasisPoints: 7000, platformBasisPoints: 2999 }],
         ['revenue_allocations_amounts_nonnegative_check', { recruiterAmountMinor: -1, platformAmountMinor: 102 }],
         ['revenue_allocations_amounts_total_check', { recruiterAmountMinor: 70, platformAmountMinor: 30 }],
@@ -266,18 +267,53 @@ test('makes ledger rows append-only and allocation financial evidence immutable 
     });
     const ledgerEntry = await createLedgerEntry(allocation);
 
-    await expectNamedConstraint(
-        () => prisma.placementRevenueAllocation.update({
-            where: { id: allocation.id },
-            data: {
-                recruiterBasisPoints: 6000,
-                platformBasisPoints: 4000,
-                recruiterAmountMinor: 121,
-                platformAmountMinor: 81,
-            },
-        }),
-        'revenue_allocation_financial_fields_immutable',
-    );
+    const otherContext = await createTenant('immutability-other-tenant');
+    const otherPlacement = await createPlacement(otherContext);
+    const immutableUpdates = [
+        {
+            grossAmountMinor: 303,
+            recruiterAmountMinor: 212,
+            platformAmountMinor: 91,
+        },
+        { currency: 'USD' },
+        {
+            workspaceId: otherContext.workspace.id,
+            clientId: otherContext.client.id,
+            placementId: otherPlacement.id,
+            recruiterUserId: otherContext.recruiter.id,
+        },
+        {
+            recruiterBasisPoints: 6000,
+            platformBasisPoints: 4000,
+            recruiterAmountMinor: 121,
+            platformAmountMinor: 81,
+        },
+    ];
+    for (const data of immutableUpdates) {
+        await expectNamedConstraint(
+            () => prisma.placementRevenueAllocation.update({
+                where: { id: allocation.id },
+                data,
+            }),
+            'revenue_allocation_financial_fields_immutable',
+        );
+    }
+
+    const unchanged = await prisma.placementRevenueAllocation.findUniqueOrThrow({
+        where: { id: allocation.id },
+    });
+    expect(unchanged).toMatchObject({
+        workspaceId: context.workspace.id,
+        clientId: context.client.id,
+        placementId: placement.id,
+        recruiterUserId: context.recruiter.id,
+        currency: 'BRL',
+        grossAmountMinor: 202,
+        recruiterBasisPoints: 7000,
+        platformBasisPoints: 3000,
+        recruiterAmountMinor: 141,
+        platformAmountMinor: 61,
+    });
 
     const reversedAt = new Date();
     const reversed = await prisma.placementRevenueAllocation.update({
@@ -298,6 +334,171 @@ test('makes ledger rows append-only and allocation financial evidence immutable 
         () => prisma.placementRevenueLedgerEntry.delete({ where: { id: ledgerEntry.id } }),
         'revenue_ledger_entries_append_only',
     );
+});
+
+test('serializes a ledger insert against a concurrent allocation financial update', async () => {
+    const context = await createTenant('concurrency');
+    const placement = await createPlacement(context);
+    const allocation = await createAllocation(context, placement);
+    const updateClient = new PrismaClient();
+    const insertClient = new PrismaClient();
+    let releaseUpdate;
+    let signalUpdateLocked;
+    const updateLocked = new Promise((resolve) => {
+        signalUpdateLocked = resolve;
+    });
+    const updateRelease = new Promise((resolve) => {
+        releaseUpdate = resolve;
+    });
+    let updateTransaction;
+    let insertOutcomePromise;
+
+    try {
+        updateTransaction = updateClient.$transaction(async (tx) => {
+            const updated = await tx.placementRevenueAllocation.update({
+                where: { id: allocation.id },
+                data: {
+                    grossAmountMinor: 202,
+                    recruiterBasisPoints: 6000,
+                    platformBasisPoints: 4000,
+                    recruiterAmountMinor: 121,
+                    platformAmountMinor: 81,
+                },
+            });
+            signalUpdateLocked();
+            await updateRelease;
+            return updated;
+        });
+        await updateLocked;
+
+        insertOutcomePromise = insertClient.placementRevenueLedgerEntry.create({
+            data: {
+                allocationId: allocation.id,
+                kind: 'allocation',
+                recruiterAmountMinor: allocation.recruiterAmountMinor,
+                platformAmountMinor: allocation.platformAmountMinor,
+                currency: allocation.currency,
+            },
+        }).then(
+            (value) => ({ status: 'fulfilled', value }),
+            (error) => ({ status: 'rejected', error }),
+        );
+
+        const beforeRelease = await Promise.race([
+            insertOutcomePromise,
+            new Promise((resolve) => setTimeout(() => resolve({ status: 'blocked' }), 100)),
+        ]);
+        releaseUpdate();
+        const updated = await updateTransaction;
+        const insertOutcome = beforeRelease.status === 'blocked'
+            ? await insertOutcomePromise
+            : beforeRelease;
+
+        expect(beforeRelease.status).toBe('blocked');
+        expect(insertOutcome.status).toBe('rejected');
+        expect(errorDiagnostic(insertOutcome.error)).toContain(
+            'revenue_ledger_amounts_match_allocation_check',
+        );
+        expect(updated).toMatchObject({
+            grossAmountMinor: 202,
+            recruiterBasisPoints: 6000,
+            platformBasisPoints: 4000,
+            recruiterAmountMinor: 121,
+            platformAmountMinor: 81,
+        });
+        await expect(prisma.placementRevenueLedgerEntry.count({
+            where: { allocationId: allocation.id },
+        })).resolves.toBe(0);
+    } finally {
+        releaseUpdate?.();
+        await Promise.allSettled([updateTransaction, insertOutcomePromise].filter(Boolean));
+        await Promise.all([updateClient.$disconnect(), insertClient.$disconnect()]);
+    }
+});
+
+test('rejects a financial update that waits behind a concurrent ledger insert', async () => {
+    const context = await createTenant('concurrency-ledger-first');
+    const placement = await createPlacement(context);
+    const allocation = await createAllocation(context, placement);
+    const insertClient = new PrismaClient();
+    const updateClient = new PrismaClient();
+    let releaseInsert;
+    let signalInsertLocked;
+    const insertLocked = new Promise((resolve) => {
+        signalInsertLocked = resolve;
+    });
+    const insertRelease = new Promise((resolve) => {
+        releaseInsert = resolve;
+    });
+    let insertTransaction;
+    let updateOutcomePromise;
+
+    try {
+        insertTransaction = insertClient.$transaction(async (tx) => {
+            const ledgerEntry = await tx.placementRevenueLedgerEntry.create({
+                data: {
+                    allocationId: allocation.id,
+                    kind: 'allocation',
+                    recruiterAmountMinor: allocation.recruiterAmountMinor,
+                    platformAmountMinor: allocation.platformAmountMinor,
+                    currency: allocation.currency,
+                },
+            });
+            signalInsertLocked();
+            await insertRelease;
+            return ledgerEntry;
+        });
+        await insertLocked;
+
+        updateOutcomePromise = updateClient.placementRevenueAllocation.update({
+            where: { id: allocation.id },
+            data: {
+                grossAmountMinor: 202,
+                recruiterBasisPoints: 6000,
+                platformBasisPoints: 4000,
+                recruiterAmountMinor: 121,
+                platformAmountMinor: 81,
+            },
+        }).then(
+            (value) => ({ status: 'fulfilled', value }),
+            (error) => ({ status: 'rejected', error }),
+        );
+
+        const beforeRelease = await Promise.race([
+            updateOutcomePromise,
+            new Promise((resolve) => setTimeout(() => resolve({ status: 'blocked' }), 100)),
+        ]);
+        releaseInsert();
+        const ledgerEntry = await insertTransaction;
+        const updateOutcome = beforeRelease.status === 'blocked'
+            ? await updateOutcomePromise
+            : beforeRelease;
+
+        expect(beforeRelease.status).toBe('blocked');
+        expect(updateOutcome.status).toBe('rejected');
+        expect(errorDiagnostic(updateOutcome.error)).toContain(
+            'revenue_allocation_financial_fields_immutable',
+        );
+        expect(ledgerEntry).toMatchObject({
+            allocationId: allocation.id,
+            recruiterAmountMinor: 70,
+            platformAmountMinor: 31,
+            currency: 'BRL',
+        });
+        await expect(prisma.placementRevenueAllocation.findUniqueOrThrow({
+            where: { id: allocation.id },
+        })).resolves.toMatchObject({
+            grossAmountMinor: 101,
+            recruiterBasisPoints: 7000,
+            platformBasisPoints: 3000,
+            recruiterAmountMinor: 70,
+            platformAmountMinor: 31,
+        });
+    } finally {
+        releaseInsert?.();
+        await Promise.allSettled([insertTransaction, updateOutcomePromise].filter(Boolean));
+        await Promise.all([insertClient.$disconnect(), updateClient.$disconnect()]);
+    }
 });
 
 test('RESTRICT preserves the complete tenant and financial evidence chain', async () => {

@@ -166,13 +166,36 @@ ALTER TABLE "placement_revenue_ledger_entries"
   REFERENCES "placement_revenue_allocations"("id", "currency")
   ON DELETE RESTRICT ON UPDATE NO ACTION;
 
+CREATE FUNCTION validate_revenue_allocation_basis_point_ranges() RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW."recruiterBasisPoints" < 0 OR NEW."recruiterBasisPoints" > 10000 THEN
+      RAISE EXCEPTION 'revenue_allocations_recruiter_bps_range_check'
+        USING ERRCODE = '23514',
+              CONSTRAINT = 'revenue_allocations_recruiter_bps_range_check';
+    END IF;
+
+    IF NEW."platformBasisPoints" < 0 OR NEW."platformBasisPoints" > 10000 THEN
+      RAISE EXCEPTION 'revenue_allocations_platform_bps_range_check'
+        USING ERRCODE = '23514',
+              CONSTRAINT = 'revenue_allocations_platform_bps_range_check';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER validate_revenue_allocation_basis_points_before_write
+BEFORE INSERT OR UPDATE ON "placement_revenue_allocations"
+FOR EACH ROW EXECUTE FUNCTION validate_revenue_allocation_basis_point_ranges();
+
 CREATE FUNCTION validate_revenue_ledger_amounts() RETURNS TRIGGER AS $$
 DECLARE
     allocation_record "placement_revenue_allocations"%ROWTYPE;
 BEGIN
     SELECT * INTO allocation_record
       FROM "placement_revenue_allocations"
-     WHERE "id" = NEW."allocationId";
+     WHERE "id" = NEW."allocationId"
+       FOR UPDATE;
 
     IF (NEW."kind" = 'allocation' AND (
       NEW."recruiterAmountMinor" < 0 OR NEW."platformAmountMinor" < 0
