@@ -9,6 +9,7 @@ const { createAnalyticsRouter } = require('./analytics');
 const { createTalentRouter } = require('./talent');
 const { createConciergeRouter } = require('./concierge');
 const { createWebhookSubscriptionsRouter } = require('./webhookSubscriptions');
+const { createMarketplacePlacementsRouter } = require('./marketplacePlacements');
 const { createKnowledgeController } = require('../../controllers/blinkfy/knowledgeController');
 
 function createBlinkfyRouter({ prisma }) {
@@ -24,6 +25,7 @@ function createBlinkfyRouter({ prisma }) {
     router.use('/talent', createTalentRouter({ ...workspaceMiddleware, prisma }));
     router.use('/clients/:clientId/concierge', createConciergeRouter({ ...workspaceMiddleware, prisma }));
     router.use('/clients/:clientId/concierge/webhooks', createWebhookSubscriptionsRouter({ ...workspaceMiddleware, prisma }));
+    router.use('/clients/:clientId/placements', createMarketplacePlacementsRouter({ ...workspaceMiddleware, prisma }));
     const knowledge = createKnowledgeController({ prisma });
     router.get('/clients/:clientId/knowledge', workspaceMiddleware.requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), workspaceMiddleware.requireClientAccess, knowledge.listDocuments);
     router.post('/clients/:clientId/knowledge', workspaceMiddleware.requireWorkspaceRole('owner', 'admin', 'recruiter'), workspaceMiddleware.requireClientAccess, knowledge.createDocument);
