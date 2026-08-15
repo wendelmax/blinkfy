@@ -29,6 +29,7 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
     const [usage, setUsage] = useState<TalentUsageAnalytics | null>(null);
     const [history, setHistory] = useState<TalentDraftHistoryItem[]>([]);
     const [plans, setPlans] = useState<TalentPlanCatalog | null>(null);
+    const [upgradeIntent, setUpgradeIntent] = useState<{ status: string; charged: boolean; subscriptionChanged: boolean } | null>(null);
 
     async function loadRecommendations() {
         setError('');
@@ -55,6 +56,14 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         setError('');
         try { setPlans(await apiFetch<TalentPlanCatalog>('/api/blinkfy/talent/plans')); }
         catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Plan catalog could not be loaded.'); }
+    }
+
+    async function requestUpgrade() {
+        setError('');
+        try {
+            const result = await apiFetch<{ intent: { status: string; charged: boolean; subscriptionChanged: boolean } }>('/api/blinkfy/talent/plans/upgrade-intent', { method: 'POST' });
+            setUpgradeIntent(result.intent);
+        } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Upgrade request could not be created.'); }
     }
 
     async function reviewDraft(id: string, status: 'approved' | 'rejected') {
@@ -143,8 +152,10 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
 
         <section aria-labelledby="talent-plans-heading" style={{ marginTop: 16 }}>
             <h3 id="talent-plans-heading">Plans</h3>
+            <small>Checkout is not charged here; a human-approved billing flow is required.</small>
             <button type="button" onClick={() => void loadPlans()}>Compare Free and Pro</button>
-            {plans && <div role="status"><p>Current plan: {plans.currentPlan} · {plans.status}</p><ul>{plans.plans.map((plan) => <li key={plan.id}>{plan.id}: {plan.limits['content.draft']} content drafts and {plan.limits['comment.draft']} comment drafts per period</li>)}</ul><small>Plan comparison only. Billing and upgrades require a separate approved flow.</small></div>}
+            {plans && <div role="status"><p>Current plan: {plans.currentPlan} · {plans.status}</p><ul>{plans.plans.map((plan) => <li key={plan.id}>{plan.id}: {plan.limits['content.draft']} content drafts and {plan.limits['comment.draft']} comment drafts per period</li>)}</ul>{plans.currentPlan === 'free' && <button type="button" onClick={() => void requestUpgrade()}>Request Pro upgrade</button>}</div>}
+            {upgradeIntent && <p role="status">Upgrade request: {upgradeIntent.status} · charged: {String(upgradeIntent.charged)} · subscription changed: {String(upgradeIntent.subscriptionChanged)}</p>}
         </section>
 
         {error && <p role="alert">{error}</p>}
