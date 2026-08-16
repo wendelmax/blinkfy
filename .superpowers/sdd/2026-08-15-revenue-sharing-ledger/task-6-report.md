@@ -10,6 +10,11 @@ results are in `verification.md`.
 
 Base reviewed: `d40c5a09f85b526406f82a1cf15b6c91bfc7db29`.
 
+Previous documentation/verification commit:
+`67cc273a9a5687dc09d8a4ddf0c356c42c829d2c` (`docs: verify recruiter revenue
+sharing ledger`). This SHA precedes the present evidence-correction commit and
+is recorded as prior documentary evidence, not as this commit's self-hash.
+
 ## Documented contract
 
 - Endpoints: preview, allocation confirmation, tenant-scoped ledger listing,

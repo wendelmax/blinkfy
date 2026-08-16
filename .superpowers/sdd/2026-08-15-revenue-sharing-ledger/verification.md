@@ -71,6 +71,6 @@ financial schema fields `grossAmountMinor`, `recruiterAmountMinor`, and
 
 ## Delivery gate
 
-- Documentation commit: `docs: verify recruiter revenue sharing ledger` (SHA recorded in the Task 6 handoff report).
+- Previous documentation/verification commit: `67cc273a9a5687dc09d8a4ddf0c356c42c829d2c` (`docs: verify recruiter revenue sharing ledger`). This SHA precedes the present evidence-correction commit; it is not asserted as this commit's self-hash.
 - Issue #24 was not commented on or closed: this branch has not been reviewed or merged, and Docker verification remains blocked locally.
 - Issue #137 was not started. The `npm ci` audit inventory (11 vulnerabilities: 2 low, 1 moderate, 6 high, 2 critical) reinforces that it is a separate final security gate to execute only after this revenue-sharing PR is merged, in its own branch and PR.
