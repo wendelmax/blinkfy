@@ -55,6 +55,28 @@ async function createContext({ actorRole = 'owner' } = {}) {
     return { actor, recruiter, workspace, client, candidate, application, placement };
 }
 
+async function createPlacement(context, recruiterUserId = context.recruiter.id) {
+    const candidate = await prisma.candidate.create({
+        data: {
+            workspaceId: context.workspace.id,
+            fullName: 'Additional Revenue Sharing Candidate',
+            normalizedEmail: `revenue-sharing-additional-${runId}-${Math.random().toString(16).slice(2)}@example.test`,
+            profile: {},
+        },
+    });
+    const application = await prisma.candidateApplication.create({
+        data: { candidateId: candidate.id, clientId: context.client.id, stage: 'hired' },
+    });
+    return prisma.marketplacePlacement.create({
+        data: {
+            workspaceId: context.workspace.id,
+            clientId: context.client.id,
+            applicationId: application.id,
+            recruiterUserId,
+        },
+    });
+}
+
 function preview(context, body, actor = context.actor) {
     return request(app)
         .post(`/api/blinkfy/clients/${context.client.id}/revenue-sharing/preview`)
@@ -69,6 +91,20 @@ function confirmAllocation(targetApp, context, body, actor = context.actor) {
         .set('Authorization', bearerToken(actor))
         .set('x-workspace-id', context.workspace.id)
         .send(body);
+}
+
+function listLedger(targetApp, context, actor = context.actor) {
+    return request(targetApp)
+        .get(`/api/blinkfy/clients/${context.client.id}/revenue-sharing/ledger`)
+        .set('Authorization', bearerToken(actor))
+        .set('x-workspace-id', context.workspace.id);
+}
+
+function reverseAllocation(targetApp, context, allocationId, actor = context.actor) {
+    return request(targetApp)
+        .post(`/api/blinkfy/clients/${context.client.id}/revenue-sharing/allocations/${allocationId}/reverse`)
+        .set('Authorization', bearerToken(actor))
+        .set('x-workspace-id', context.workspace.id);
 }
 
 afterAll(async () => {
@@ -269,4 +305,212 @@ test('returns 404 when a recruiter confirms another recruiter\'s placement', asy
 
     expect(response.status).toBe(404);
     await expect(prisma.placementRevenueAllocation.count({ where: { placementId: context.placement.id } })).resolves.toBe(0);
+});
+
+test.each(['owner', 'admin'])('%s lists only active-client ledger entries newest first with an allowlisted response', async (actorRole) => {
+    const context = await createContext({ actorRole });
+    const secondPlacement = await createPlacement(context);
+    const otherWorkspace = await createContext();
+
+    expect((await confirmAllocation(app, context, {
+        placementId: context.placement.id, currency: 'BRL', grossAmountMinor: 101,
+    })).status).toBe(201);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect((await confirmAllocation(app, context, {
+        placementId: secondPlacement.id, currency: 'USD', grossAmountMinor: 100,
+    })).status).toBe(201);
+    expect((await confirmAllocation(app, otherWorkspace, {
+        placementId: otherWorkspace.placement.id, currency: 'BRL', grossAmountMinor: 100,
+    })).status).toBe(201);
+
+    const response = await listLedger(app, context);
+
+    expect(response.status).toBe(200);
+    expect(response.body.entries).toHaveLength(2);
+    expect(response.body.entries.map((entry) => entry.placementId)).toEqual([secondPlacement.id, context.placement.id]);
+    expect(response.body.entries[0]).toEqual({
+        id: expect.any(String),
+        allocationId: expect.any(String),
+        kind: 'allocation',
+        placementId: secondPlacement.id,
+        recruiterUserId: context.recruiter.id,
+        recruiterAmountMinor: 70,
+        platformAmountMinor: 30,
+        currency: 'USD',
+        status: 'pending',
+        createdAt: expect.any(String),
+        reversedAt: null,
+    });
+    expect(response.body.entries[0]).not.toHaveProperty('candidate');
+    expect(response.body.entries[0]).not.toHaveProperty('paymentCredentials');
+    expect(response.body.entries[0]).not.toHaveProperty('taxDocuments');
+    expect(response.body.entries[0]).not.toHaveProperty('providerId');
+    expect(response.body.entries[0]).not.toHaveProperty('metadata');
+});
+
+test('a recruiter lists only their own active-client ledger entries', async () => {
+    const context = await createContext();
+    const otherRecruiter = await createUser('ledger-other-recruiter');
+    await prisma.workspaceMembership.create({
+        data: { workspaceId: context.workspace.id, userId: otherRecruiter.id, role: 'recruiter' },
+    });
+    const otherPlacement = await createPlacement(context, otherRecruiter.id);
+
+    expect((await confirmAllocation(app, context, {
+        placementId: context.placement.id, currency: 'BRL', grossAmountMinor: 100,
+    })).status).toBe(201);
+    expect((await confirmAllocation(app, context, {
+        placementId: otherPlacement.id, currency: 'BRL', grossAmountMinor: 100,
+    })).status).toBe(201);
+
+    const response = await listLedger(app, context, otherRecruiter);
+
+    expect(response.status).toBe(200);
+    expect(response.body.entries).toHaveLength(1);
+    expect(response.body.entries[0]).toMatchObject({
+        placementId: otherPlacement.id,
+        recruiterUserId: otherRecruiter.id,
+    });
+});
+
+test.each(['owner', 'admin'])('%s reverses an allocation with immutable compensating evidence and an IDs-only audit event', async (actorRole) => {
+    const context = await createContext({ actorRole });
+    expect((await confirmAllocation(app, context, {
+        placementId: context.placement.id, currency: 'BRL', grossAmountMinor: 101,
+    })).status).toBe(201);
+    const original = await prisma.placementRevenueAllocation.findUniqueOrThrow({
+        where: { placementId: context.placement.id },
+    });
+
+    const response = await reverseAllocation(app, context, original.id);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+        allocation: expect.objectContaining({
+            id: original.id,
+            placementId: context.placement.id,
+            recruiterUserId: context.recruiter.id,
+            currency: 'BRL',
+            grossAmountMinor: 101,
+            recruiterAmountMinor: 70,
+            platformAmountMinor: 31,
+            status: 'reversed',
+        }),
+        reversal: {
+            id: expect.any(String),
+            allocationId: original.id,
+            kind: 'reversal',
+            placementId: context.placement.id,
+            recruiterUserId: context.recruiter.id,
+            recruiterAmountMinor: -70,
+            platformAmountMinor: -31,
+            currency: 'BRL',
+            status: 'reversed',
+            createdAt: expect.any(String),
+            reversedAt: expect.any(String),
+        },
+    });
+    expect(response.body).not.toHaveProperty('audit');
+    expect(response.body.reversal).not.toHaveProperty('metadata');
+
+    const allocation = await prisma.placementRevenueAllocation.findUniqueOrThrow({ where: { id: original.id } });
+    const entries = await prisma.placementRevenueLedgerEntry.findMany({
+        where: { allocationId: original.id },
+        orderBy: { kind: 'asc' },
+    });
+    const audit = await prisma.auditEvent.findFirstOrThrow({
+        where: { workspaceId: context.workspace.id, action: 'marketplace.revenue_reversed' },
+    });
+    expect(allocation).toMatchObject({ status: 'reversed', reversedAt: expect.any(Date) });
+    expect(entries).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+            kind: 'allocation', recruiterAmountMinor: 70, platformAmountMinor: 31, currency: 'BRL',
+        }),
+        expect.objectContaining({
+            kind: 'reversal', recruiterAmountMinor: -70, platformAmountMinor: -31, currency: 'BRL',
+        }),
+    ]));
+    expect(audit).toMatchObject({
+        clientId: context.client.id,
+        actorUserId: context.actor.id,
+        entityType: 'placement_revenue_allocation',
+        entityId: original.id,
+        action: 'marketplace.revenue_reversed',
+        metadata: {
+            allocationId: original.id,
+            placementId: context.placement.id,
+            recruiterUserId: context.recruiter.id,
+        },
+    });
+});
+
+test('returns conflict on a second reversal while preserving exactly one immutable reversal', async () => {
+    const context = await createContext();
+    expect((await confirmAllocation(app, context, {
+        placementId: context.placement.id, currency: 'USD', grossAmountMinor: 100,
+    })).status).toBe(201);
+    const allocation = await prisma.placementRevenueAllocation.findUniqueOrThrow({
+        where: { placementId: context.placement.id },
+    });
+
+    expect((await reverseAllocation(app, context, allocation.id)).status).toBe(200);
+    expect((await reverseAllocation(app, context, allocation.id)).status).toBe(409);
+    await expect(prisma.placementRevenueLedgerEntry.count({
+        where: { allocationId: allocation.id, kind: 'reversal' },
+    })).resolves.toBe(1);
+    await expect(prisma.placementRevenueLedgerEntry.count({
+        where: { allocationId: allocation.id, kind: 'allocation' },
+    })).resolves.toBe(1);
+    await expect(prisma.auditEvent.count({
+        where: { workspaceId: context.workspace.id, action: 'marketplace.revenue_reversed' },
+    })).resolves.toBe(1);
+});
+
+test('serializes concurrent reversals from independent Prisma connections to one compensating entry', async () => {
+    const context = await createContext();
+    expect((await confirmAllocation(app, context, {
+        placementId: context.placement.id, currency: 'BRL', grossAmountMinor: 101,
+    })).status).toBe(201);
+    const allocation = await prisma.placementRevenueAllocation.findUniqueOrThrow({
+        where: { placementId: context.placement.id },
+    });
+    const firstPrisma = new PrismaClient();
+    const secondPrisma = new PrismaClient();
+
+    try {
+        const [first, second] = await Promise.all([
+            reverseAllocation(createApp({ prisma: firstPrisma }), context, allocation.id),
+            reverseAllocation(createApp({ prisma: secondPrisma }), context, allocation.id),
+        ]);
+
+        expect([first.status, second.status].sort()).toEqual([200, 409]);
+        await expect(prisma.placementRevenueLedgerEntry.count({
+            where: { allocationId: allocation.id, kind: 'reversal' },
+        })).resolves.toBe(1);
+        await expect(prisma.placementRevenueLedgerEntry.count({
+            where: { allocationId: allocation.id, kind: 'allocation' },
+        })).resolves.toBe(1);
+        await expect(prisma.auditEvent.count({
+            where: { workspaceId: context.workspace.id, action: 'marketplace.revenue_reversed' },
+        })).resolves.toBe(1);
+    } finally {
+        await Promise.all([firstPrisma.$disconnect(), secondPrisma.$disconnect()]);
+    }
+});
+
+test('forbids a recruiter from reversing an allocation', async () => {
+    const context = await createContext();
+    expect((await confirmAllocation(app, context, {
+        placementId: context.placement.id, currency: 'BRL', grossAmountMinor: 100,
+    })).status).toBe(201);
+    const allocation = await prisma.placementRevenueAllocation.findUniqueOrThrow({
+        where: { placementId: context.placement.id },
+    });
+
+    const response = await reverseAllocation(app, context, allocation.id, context.recruiter);
+
+    expect(response.status).toBe(403);
+    await expect(prisma.placementRevenueLedgerEntry.count({
+        where: { allocationId: allocation.id, kind: 'reversal' },
+    })).resolves.toBe(0);
 });

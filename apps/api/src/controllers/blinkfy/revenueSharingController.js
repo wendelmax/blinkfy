@@ -67,9 +67,26 @@ function serializeAllocation(allocation) {
         recruiterAmountMinor: allocation.recruiterAmountMinor,
         platformAmountMinor: allocation.platformAmountMinor,
         status: allocation.status,
+        reversedAt: allocation.reversedAt,
         createdAt: allocation.createdAt,
         confirmed: true,
         transferred: false,
+    };
+}
+
+function serializeLedgerEntry(entry) {
+    return {
+        id: entry.id,
+        allocationId: entry.allocationId,
+        kind: entry.kind,
+        placementId: entry.allocation.placementId,
+        recruiterUserId: entry.allocation.recruiterUserId,
+        recruiterAmountMinor: entry.recruiterAmountMinor,
+        platformAmountMinor: entry.platformAmountMinor,
+        currency: entry.currency,
+        status: entry.allocation.status,
+        createdAt: entry.createdAt,
+        reversedAt: entry.allocation.reversedAt,
     };
 }
 
@@ -180,7 +197,112 @@ function createRevenueSharingController({ prisma }) {
         }
     }
 
-    return { preview, confirmAllocation };
+    async function listLedger(req, res) {
+        const entries = await prisma.placementRevenueLedgerEntry.findMany({
+            where: {
+                allocation: {
+                    workspaceId: req.workspace.id,
+                    clientId: req.client.id,
+                    ...(isPrivilegedRole(req.workspaceMembership.role)
+                        ? {}
+                        : { recruiterUserId: req.user.id }),
+                },
+            },
+            select: {
+                id: true,
+                allocationId: true,
+                kind: true,
+                recruiterAmountMinor: true,
+                platformAmountMinor: true,
+                currency: true,
+                createdAt: true,
+                allocation: {
+                    select: {
+                        placementId: true,
+                        recruiterUserId: true,
+                        status: true,
+                        reversedAt: true,
+                    },
+                },
+            },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        });
+
+        return res.json({ entries: entries.map(serializeLedgerEntry) });
+    }
+
+    async function reverseAllocation(req, res) {
+        try {
+            const result = await prisma.$transaction(async (transaction) => {
+                const lockedAllocations = await transaction.$queryRaw`
+                    SELECT
+                        "id",
+                        "placementId",
+                        "recruiterUserId",
+                        "currency",
+                        "recruiterAmountMinor",
+                        "platformAmountMinor",
+                        "status"::text AS "status"
+                    FROM "placement_revenue_allocations"
+                    WHERE "id" = ${req.params.allocationId}
+                      AND "workspaceId" = ${req.workspace.id}
+                      AND "clientId" = ${req.client.id}
+                    FOR UPDATE
+                `;
+                const allocation = lockedAllocations[0];
+                if (!allocation) throw requestError(404, 'Revenue allocation not found');
+                if (allocation.status === 'reversed') {
+                    throw requestError(409, 'Revenue allocation already reversed');
+                }
+
+                const reversedAt = new Date();
+                const reversal = await transaction.placementRevenueLedgerEntry.create({
+                    data: {
+                        allocationId: allocation.id,
+                        kind: 'reversal',
+                        recruiterAmountMinor: -allocation.recruiterAmountMinor,
+                        platformAmountMinor: -allocation.platformAmountMinor,
+                        currency: allocation.currency,
+                    },
+                });
+                const reversedAllocation = await transaction.placementRevenueAllocation.update({
+                    where: { id: allocation.id },
+                    data: { status: 'reversed', reversedAt },
+                });
+                await recordAuditEvent({
+                    prisma: transaction,
+                    workspaceId: req.workspace.id,
+                    clientId: req.client.id,
+                    actorUserId: req.user.id,
+                    entityType: 'placement_revenue_allocation',
+                    entityId: allocation.id,
+                    action: 'marketplace.revenue_reversed',
+                    metadata: {
+                        allocationId: allocation.id,
+                        placementId: allocation.placementId,
+                        recruiterUserId: allocation.recruiterUserId,
+                    },
+                });
+
+                return { allocation: reversedAllocation, reversal };
+            });
+            return res.json({
+                allocation: serializeAllocation(result.allocation),
+                reversal: serializeLedgerEntry({
+                    ...result.reversal,
+                    allocation: result.allocation,
+                }),
+            });
+        } catch (error) {
+            if (error.statusCode) return res.status(error.statusCode).json({ message: error.message });
+            if (error.code === 'P2002') {
+                return res.status(409).json({ message: 'Revenue allocation already reversed' });
+            }
+            throw error;
+        }
+    }
+
+    return { preview, confirmAllocation, listLedger, reverseAllocation };
 }
 
 module.exports = {
@@ -189,5 +311,6 @@ module.exports = {
     parseAllocationInput,
     requestError,
     serializeAllocation,
+    serializeLedgerEntry,
     serializePreview,
 };

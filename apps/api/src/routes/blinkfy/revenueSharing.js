@@ -15,6 +15,16 @@ function createRevenueSharingRouter({ requireWorkspaceRole, requireClientAccess,
         requireClientAccess,
         controller.confirmAllocation,
     );
+    router.get('/ledger',
+        requireWorkspaceRole('owner', 'admin', 'recruiter'),
+        requireClientAccess,
+        controller.listLedger,
+    );
+    router.post('/allocations/:allocationId/reverse',
+        requireWorkspaceRole('owner', 'admin'),
+        requireClientAccess,
+        controller.reverseAllocation,
+    );
 
     return router;
 }
