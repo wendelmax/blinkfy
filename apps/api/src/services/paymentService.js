@@ -5,56 +5,69 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const EXCHANGE_RATE_API = process.env.EXCHANGE_RATE_API || 'https://api.frankfurter.app/latest?from=USD&to=BRL';
-const EXCHANGE_RATE_FALLBACK = parseFloat(process.env.EXCHANGE_RATE) || 5.5;
+const EXCHANGE_RATE_APIS = {
+    BRL: process.env.EXCHANGE_RATE_API || 'https://api.frankfurter.app/latest?from=USD&to=BRL',
+    ARS: process.env.EXCHANGE_RATE_API_ARS || 'https://api.frankfurter.app/latest?from=USD&to=ARS',
+    MXN: process.env.EXCHANGE_RATE_API_MXN || 'https://api.frankfurter.app/latest?from=USD&to=MXN',
+};
 
-async function fetchExchangeRate() {
+const EXCHANGE_RATE_FALLBACKS = {
+    BRL: parseFloat(process.env.EXCHANGE_RATE) || 5.5,
+    ARS: parseFloat(process.env.EXCHANGE_RATE_ARS) || 1000,
+    MXN: parseFloat(process.env.EXCHANGE_RATE_MXN) || 18,
+};
+
+async function fetchExchangeRate(toCurrency = 'BRL') {
     try {
-        const res = await fetch(EXCHANGE_RATE_API);
+        const res = await fetch(EXCHANGE_RATE_APIS[toCurrency]);
         if (!res.ok) throw new Error('Rate API error');
         const data = await res.json();
-        const rate = data?.rates?.BRL ?? data?.rates?.brl;
+        const rate = data?.rates?.[toCurrency] ?? data?.rates?.[toCurrency.toLowerCase()];
         if (rate != null) {
             await prisma.exchangeRateLog.create({
-                data: { fromCur: 'USD', toCur: 'BRL', rate, source: 'api' },
+                data: { fromCur: 'USD', toCur: toCurrency, rate, source: 'api' },
             }).catch(() => null);
             return rate;
         }
     } catch (err) {
-        console.warn('Exchange rate API failed, using fallback:', err.message);
+        console.warn(`Exchange rate API failed for ${toCurrency}, using fallback:`, err.message);
     }
+    const fallback = EXCHANGE_RATE_FALLBACKS[toCurrency];
     await prisma.exchangeRateLog.create({
-        data: { fromCur: 'USD', toCur: 'BRL', rate: EXCHANGE_RATE_FALLBACK, source: 'env' },
+        data: { fromCur: 'USD', toCur: toCurrency, rate: fallback, source: 'env' },
     }).catch(() => null);
-    return EXCHANGE_RATE_FALLBACK;
+    return fallback;
 }
 
-async function getExchangeRate() {
+async function getExchangeRate(toCurrency = 'BRL') {
     const last = await prisma.exchangeRateLog.findFirst({
-        where: { fromCur: 'USD', toCur: 'BRL' },
+        where: { fromCur: 'USD', toCur: toCurrency },
         orderBy: { createdAt: 'desc' },
     });
     const maxAgeMs = 60 * 60 * 1000;
     if (last && (Date.now() - last.createdAt.getTime() < maxAgeMs)) return last.rate;
-    return fetchExchangeRate();
+    return fetchExchangeRate(toCurrency);
 }
 
 exports.getExchangeRate = getExchangeRate;
 
-exports.calculateNetSalary = async (grossUsd) => {
-    const rate = await getExchangeRate();
-    const grossBrl = grossUsd * rate;
-    return { grossUsd, grossBrl, exchangeRate: rate };
+exports.calculateNetSalary = async (grossUsd, toCurrency = 'BRL') => {
+    const rate = await getExchangeRate(toCurrency);
+    const grossLocal = grossUsd * rate;
+    return { grossUsd, grossLocal, currency: toCurrency, exchangeRate: rate };
 };
 
 exports.getWalletSummaryForUser = async (userId, salaryUsd) => {
     const amount = parseFloat(salaryUsd) || 0;
     const taxService = require('./taxService');
-    const transactions = await prisma.walletTransaction.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-    });
+    const [transactions, candidateProfile] = await Promise.all([
+        prisma.walletTransaction.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+        }),
+        prisma.candidateProfile.findUnique({ where: { userId } }),
+    ]);
     const balanceUsd = transactions.reduce((sum, t) => {
         if (t.status !== 'completed') return sum;
         return sum + (t.type === 'withdrawal' ? -t.amountUsd : t.amountUsd);
@@ -63,8 +76,10 @@ exports.getWalletSummaryForUser = async (userId, salaryUsd) => {
         .filter((t) => t.status === 'pending' && t.type !== 'withdrawal')
         .reduce((sum, t) => sum + t.amountUsd, 0);
     const projectionAmount = amount > 0 ? amount : (balanceUsd > 0 ? balanceUsd : 5000);
-    const currencyData = await exports.calculateNetSalary(projectionAmount);
-    const taxData = await taxService.calculateBrazilTaxes(currencyData.grossBrl);
+    const taxResidence = candidateProfile?.taxResidence;
+    const currency = taxService.resolveCurrencyForResidence(taxResidence);
+    const currencyData = await exports.calculateNetSalary(projectionAmount, currency);
+    const taxData = await taxService.calculateTaxesByResidence(taxResidence, currencyData.grossLocal);
     return {
         wallet: { balanceUsd, availableForWithdrawal: Math.max(0, balanceUsd * 0.9), pendingEscrow },
         projections: { ...currencyData, ...taxData },
