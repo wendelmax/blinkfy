@@ -2,11 +2,10 @@
 
 ## Result
 
-**DONE_WITH_CONCERNS.** The requested documentation and evidence were produced
-without changing product code. Prisma, API, web tests, shared build, and Next
-build are green after the complete dependency install. Docker remains the only
-local verification blocker because no daemon is available; exact command
-results are in `verification.md`.
+**DONE.** The requested documentation and evidence were produced without
+changing product code. Prisma, API, web tests, shared build, Next build, and
+Docker Compose image builds are green; exact command results are in
+`verification.md`.
 
 Base reviewed: `d40c5a09f85b526406f82a1cf15b6c91bfc7db29`.
 
@@ -42,14 +41,19 @@ is recorded as prior documentary evidence, not as this commit's self-hash.
 - Web tests: 21 files and 36 tests passed.
 - Shared build: passed.
 - Web build: Next.js 16.2.9 passed and generated 8 pages.
-- Docker build: failed because `/var/run/docker.sock` was unavailable.
+- The WSL `docker compose build api web` launcher failed because
+  `/var/run/docker.sock` was unavailable, but this is an environment-specific
+  daemon limitation rather than a failed Compose configuration.
 - Docker Desktop subsequently reproduced a pre-build context failure:
   `invalid file request apps/api/node_modules/.bin/prisma`. Compose builds
   from the repository root, so app-local ignore files did not exclude nested
   `node_modules`. A root `.dockerignore` now excludes local dependency trees,
   build/test artifacts, environment files, logs, `.git`, and `.superpowers`.
-  This is a minimal context fix only; Docker has not yet been rerun green and
-  remains an environmental CI/daemon blocker.
+  The subsequent `docker.exe compose build api web` passed and built both
+  images. It uses Docker Desktop (because the WSL daemon is absent) and is
+  equivalent Compose verification: API completed `npm ci`, shared build, Prisma
+  generate/export; web completed `npm ci`, shared build, and Next 16.2.9
+  build/export for 8 pages.
 - Dependency install: `npm ci --include=dev` installed 554 packages. Its audit
   summary reports 11 vulnerabilities (2 low, 1 moderate, 6 high, 2 critical);
   dependency remediation is explicitly deferred to the separate post-merge
@@ -70,12 +74,13 @@ is recorded as prior documentary evidence, not as this commit's self-hash.
 > This feature records no payment or transfer; legacy `Placement`,
 > `WalletTransaction`, and `paymentService.js` remain unchanged. Prisma (23
 > migrations), API (71 files/216 tests), web tests (21 files/36 tests), shared
-> build, and Next 16.2.9 build (8 pages) passed. Docker is the sole local
-> complete-gate blocker because no daemon is available. `npm ci --include=dev`
+> build, Next 16.2.9 build (8 pages), and Docker Compose image builds passed.
+> The WSL Docker socket is unavailable, but `docker.exe` uses Docker Desktop
+> and validated the same Compose configuration successfully. `npm ci --include=dev`
 > reports 11 audit vulnerabilities (2 low, 1 moderate, 6 high, 2 critical);
 > these remain for #137, a separate post-merge security branch/PR. Escrow/payment
-> execution is still dependent on #9. Do not close #24 until Docker verification
-> is completed and the merged PR is reviewed.
+> execution is still dependent on #9. Do not close #24 until the merged PR is
+> reviewed.
 
 ## Explicit non-actions
 

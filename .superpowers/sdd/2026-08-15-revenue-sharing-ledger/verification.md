@@ -43,17 +43,19 @@ date!`
 | `npm run build --workspace=packages/shared` | PASS, exit `0` | Shared package build passed. |
 | `npm run build --workspace=apps/web` | PASS, exit `0` | Next.js 16.2.9 build passed and generated 8 pages. |
 | `docker compose build api web` | FAIL, exit `1` | Docker daemon unavailable: `failed to connect to the docker API at unix:///var/run/docker.sock ... no such file or directory`. Compose also warned that `version` is obsolete. |
+| `docker.exe compose build api web` | PASS, exit `0` | Docker Desktop built `blinkfy-revenue-exec-api` and `blinkfy-revenue-exec-web`. API image completed `npm ci`, shared build, Prisma generate, and export; web image completed `npm ci`, shared build, and Next.js 16.2.9 build/export for 8 pages. |
 
 `npm ci --include=dev` completed before the successful rerun, installing 554
 packages. Its audit summary reported 11 vulnerabilities: 2 low, 1 moderate, 6
 high, and 2 critical. This task does not remediate dependencies; the inventory
 and any remediation belong to the separate post-merge #137 security gate.
 
-Therefore the only remaining local complete-repository blocker is Docker: the
-API, web, shared-package, and Prisma checks are green, but no Docker daemon is
-available in this environment.
+The WSL Docker daemon remains unavailable, but `docker.exe` uses Docker Desktop
+and exercises the same Compose configuration successfully. The complete Task 6
+verification gate is green; the WSL socket is an environment-specific launcher
+limitation, not a remaining build blocker.
 
-### Docker context correction (pending rerun)
+### Docker context correction: RED then GREEN
 
 Docker Desktop reproduced a separate context defect before the image build: the
 Compose build context is the repository root (`context: .`), so the
@@ -65,8 +67,10 @@ evidence, not a successful Docker verification.
 
 The root `.dockerignore` now excludes `.git`, `.superpowers`, root and nested
 `node_modules`, `.next`, `dist`, `coverage`, local `.env` files, and logs. It
-does not exclude source files, package manifests, or lockfiles. Docker image
-build verification remains pending an external Docker daemon/CI rerun.
+does not exclude source files, package manifests, or lockfiles. The subsequent
+`docker.exe compose build api web` exited `0` and built both images, providing
+the GREEN verification through Docker Desktop despite the unavailable WSL
+daemon.
 
 ## Diff and boundary review
 
@@ -87,5 +91,5 @@ financial schema fields `grossAmountMinor`, `recruiterAmountMinor`, and
 ## Delivery gate
 
 - Previous documentation/verification commit: `67cc273a9a5687dc09d8a4ddf0c356c42c829d2c` (`docs: verify recruiter revenue sharing ledger`). This SHA precedes the present evidence-correction commit; it is not asserted as this commit's self-hash.
-- Issue #24 was not commented on or closed: this branch has not been reviewed or merged, and Docker verification remains blocked locally.
+- Issue #24 was not commented on or closed: this branch has not been reviewed or merged. Docker verification is complete through Docker Desktop.
 - Issue #137 was not started. The `npm ci` audit inventory (11 vulnerabilities: 2 low, 1 moderate, 6 high, 2 critical) reinforces that it is a separate final security gate to execute only after this revenue-sharing PR is merged, in its own branch and PR.
