@@ -30,6 +30,8 @@ model User {
   walletTransactions   WalletTransaction[]
   workspaceMemberships WorkspaceMembership[]
   talentCandidate      Candidate? @relation("CandidateTalentAccount")
+  marketplacePlacements MarketplacePlacement[] @relation("MarketplacePlacementRecruiter")
+  revenueAllocations   PlacementRevenueAllocation[] @relation("PlacementRevenueAllocationRecruiter")
 }
 
 enum UserType {
@@ -209,6 +211,8 @@ model Workspace {
   candidates  Candidate[]
   consents    CandidateConsent[]
   imports     CandidateImport[]
+  marketplacePlacements MarketplacePlacement[]
+  revenueAllocations PlacementRevenueAllocation[]
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
 }
@@ -220,6 +224,8 @@ model WorkspaceMembership {
   role        WorkspaceRole
   workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketplacePlacements MarketplacePlacement[] @relation("MarketplacePlacementRecruiterMembership")
+  revenueAllocations PlacementRevenueAllocation[] @relation("PlacementRevenueAllocationRecruiterMembership")
 
   @@unique([workspaceId, userId])
 }
@@ -234,12 +240,16 @@ model Client {
   candidateImports CandidateImport[]
   consents         CandidateConsent[]
   applications     CandidateApplication[]
+  marketplacePlacements MarketplacePlacement[]
+  revenueAllocations PlacementRevenueAllocation[]
   knowledgeDocuments KnowledgeDocument[]
   conciergeSchedulingPolicy ConciergeSchedulingPolicy?
   conciergeWebhookSubscription ConciergeWebhookSubscription?
   conciergeWebhookOutbox ConciergeWebhookOutbox[]
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
+
+  @@unique([workspaceId, id], map: "clients_workspace_id_key")
 }
 
 model AuditEvent {
@@ -479,6 +489,7 @@ model CandidateApplication {
   interestedAt   DateTime?
   screenedAt     DateTime?
   shortlistedAt  DateTime?
+  hiredAt        DateTime?
   rejectedAt     DateTime?
   candidate      Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   client         Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -489,10 +500,12 @@ model CandidateApplication {
   messageSuggestions MessageSuggestion[]
   conciergeMessages ConciergeMessage[]
   followUpSequence ConciergeFollowUpSequence?
+  marketplacePlacement MarketplacePlacement?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
   @@unique([candidateId, jobId])
+  @@unique([clientId, id], map: "candidate_applications_client_id_key")
   @@index([clientId, stage])
   @@index([jobId, stage])
   @@map("candidate_applications")
@@ -720,7 +733,97 @@ enum ApplicationStage {
   interested
   screened
   shortlisted
+  hired
   rejected
+}
+
+enum MarketplacePlacementStatus {
+  confirmed
+
+  @@map("marketplace_placement_status")
+}
+
+enum RevenueAllocationStatus {
+  pending
+  available
+  reversed
+
+  @@map("revenue_allocation_status")
+}
+
+enum RevenueLedgerEntryKind {
+  allocation
+  reversal
+
+  @@map("revenue_ledger_entry_kind")
+}
+
+model MarketplacePlacement {
+  id                    String                     @id @default(cuid())
+  workspaceId           String
+  clientId              String
+  applicationId         String                     @unique(map: "marketplace_placements_application_key")
+  recruiterUserId       String
+  status                MarketplacePlacementStatus @default(confirmed)
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  workspace             Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "marketplace_placements_workspace_fkey")
+  client                Client                     @relation(fields: [workspaceId, clientId], references: [workspaceId, id], onDelete: Restrict, onUpdate: NoAction, map: "marketplace_placements_workspace_client_fkey")
+  application           CandidateApplication       @relation(fields: [clientId, applicationId], references: [clientId, id], onDelete: Restrict, onUpdate: NoAction, map: "marketplace_placements_client_application_fkey")
+  recruiter             User                       @relation("MarketplacePlacementRecruiter", fields: [recruiterUserId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "marketplace_placements_recruiter_user_fkey")
+  recruiterMembership   WorkspaceMembership        @relation("MarketplacePlacementRecruiterMembership", fields: [workspaceId, recruiterUserId], references: [workspaceId, userId], onDelete: Restrict, onUpdate: NoAction, map: "marketplace_placements_workspace_recruiter_fkey")
+  allocation            PlacementRevenueAllocation?
+
+  @@unique([clientId, applicationId], map: "marketplace_placements_client_application_key")
+  @@unique([workspaceId, clientId, recruiterUserId, id], map: "marketplace_placements_tenant_id_key")
+  @@index([workspaceId, clientId, createdAt])
+  @@index([recruiterUserId, createdAt])
+  @@map("marketplace_placements")
+}
+
+model PlacementRevenueAllocation {
+  id                    String                  @id @default(cuid())
+  workspaceId           String
+  clientId              String
+  placementId           String                  @unique(map: "revenue_allocations_placement_key")
+  recruiterUserId       String
+  currency              String                  @db.Char(3)
+  grossAmountMinor      Int
+  recruiterBasisPoints  Int                     @default(7000)
+  platformBasisPoints   Int                     @default(3000)
+  recruiterAmountMinor  Int
+  platformAmountMinor   Int
+  status                RevenueAllocationStatus @default(pending)
+  availableAt           DateTime?
+  reversedAt            DateTime?
+  createdAt             DateTime                @default(now())
+  workspace             Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "revenue_allocations_workspace_fkey")
+  client                Client                  @relation(fields: [workspaceId, clientId], references: [workspaceId, id], onDelete: Restrict, onUpdate: NoAction, map: "revenue_allocations_workspace_client_fkey")
+  placement             MarketplacePlacement    @relation(fields: [workspaceId, clientId, recruiterUserId, placementId], references: [workspaceId, clientId, recruiterUserId, id], onDelete: Restrict, onUpdate: NoAction, map: "revenue_allocations_placement_tenant_fkey")
+  recruiter             User                    @relation("PlacementRevenueAllocationRecruiter", fields: [recruiterUserId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "revenue_allocations_recruiter_user_fkey")
+  recruiterMembership   WorkspaceMembership     @relation("PlacementRevenueAllocationRecruiterMembership", fields: [workspaceId, recruiterUserId], references: [workspaceId, userId], onDelete: Restrict, onUpdate: NoAction, map: "revenue_allocations_workspace_recruiter_fkey")
+  ledgerEntries         PlacementRevenueLedgerEntry[]
+
+  @@unique([workspaceId, clientId, recruiterUserId, placementId], map: "revenue_allocations_placement_tenant_key")
+  @@unique([id, currency], map: "revenue_allocations_id_currency_key")
+  @@index([workspaceId, clientId, createdAt], map: "revenue_allocations_workspace_client_created_idx")
+  @@index([recruiterUserId, createdAt])
+  @@map("placement_revenue_allocations")
+}
+
+model PlacementRevenueLedgerEntry {
+  id                    String                  @id @default(cuid())
+  allocationId          String
+  kind                  RevenueLedgerEntryKind
+  recruiterAmountMinor  Int
+  platformAmountMinor   Int
+  currency              String                  @db.Char(3)
+  createdAt             DateTime                @default(now())
+  allocation            PlacementRevenueAllocation @relation(fields: [allocationId, currency], references: [id, currency], onDelete: Restrict, onUpdate: NoAction, map: "revenue_ledger_allocation_currency_fkey")
+
+  @@unique([allocationId, kind], map: "revenue_ledger_allocation_kind_key")
+  @@index([createdAt])
+  @@map("placement_revenue_ledger_entries")
 }
 
 enum FitScoreConfidence {

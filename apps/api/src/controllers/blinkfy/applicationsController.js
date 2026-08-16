@@ -55,6 +55,7 @@ function serializeApplication(application) {
         interestedAt: application.interestedAt,
         screenedAt: application.screenedAt,
         shortlistedAt: application.shortlistedAt,
+        hiredAt: application.hiredAt,
         rejectedAt: application.rejectedAt,
         score: serializeScore(snapshot),
         ...(application.candidate ? {

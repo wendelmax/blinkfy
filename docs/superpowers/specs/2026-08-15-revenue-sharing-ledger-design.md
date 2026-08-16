@@ -105,8 +105,8 @@ Creates one compensating ledger entry and marks the allocation `reversed` in one
 ## Authorization and Audit
 
 - Workspace owners and admins may preview, confirm, list, and reverse.
-- Recruiters may preview, confirm, and list allocations only when they are the allocation recruiter and have access to the client.
-- Recruiters may not reverse allocations.
+- Recruiters may preview and list allocations only when they are the allocation recruiter and have access to the client.
+- Recruiters may not confirm or reverse allocations. Confirmation fixes the gross amount and basis-point split into an append-only ledger entry, so only an owner or admin may set those terms.
 - Every confirmation and reversal records actor, workspace, client, allocation, placement, currency, amounts, and basis points.
 - Audit metadata excludes bank details, card data, tax documents, provider secrets, and candidate private data.
 
@@ -135,3 +135,33 @@ Unit tests verify default and overridden splits, integer truncation, residual al
 ## Post-MVP Boundaries
 
 Provider checkout, escrow funding, retention windows, payout availability, withdrawals, chargebacks, taxation, invoices, KYC, and multi-currency conversion are separate M5 capabilities that consume this ledger after their own approval and security review.
+
+## Implemented Contract and Non-Payment Boundary
+
+The implemented routes are all scoped by workspace and client access:
+
+| Endpoint | Owner / admin | Recruiter | Result |
+| --- | --- | --- | --- |
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/preview` | Allowed | Allowed only for the recruiter's own marketplace placement | Calculates only; does not persist an allocation or audit event. |
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations` | Allowed | Denied | Creates the pending allocation, its positive ledger entry, and an audit event atomically. |
+| `GET /api/blinkfy/clients/:clientId/revenue-sharing/ledger` | Allowed | Allowed only for allocations attributed to that recruiter | Returns allowlisted ledger evidence newest first. |
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations/:allocationId/reverse` | Allowed | Denied | Appends one negative compensating entry and changes the allocation to `reversed` atomically. |
+
+Workspace viewers are not authorized for these routes. A recruiter attempting to
+address another recruiter's placement or allocation receives the scoped
+not-found behavior rather than cross-tenant data. Duplicate allocation or
+reversal attempts return `409`.
+
+The default allocation is recruiter `7000` and Blinkfy `3000` basis points.
+The recruiter amount is `floor(grossAmountMinor * recruiterBasisPoints / 10000)`
+and Blinkfy receives the residual: `grossAmountMinor - recruiterAmountMinor`.
+All amounts are integer minor units. The state model is
+`pending -> available -> reversed`; this release creates `pending` allocations
+and exposes `pending -> reversed` only. Making funds `available` remains a
+future escrow/retention-policy decision.
+
+This ledger does **not** transfer, reserve, charge, withdraw, or pay funds.
+Preview and confirmation responses explicitly report `transferred: false`.
+There is no provider integration or payment credential input in these routes.
+The legacy `Placement`, `WalletTransaction`, and `paymentService.js` code paths
+are unchanged and are neither read nor written by the ledger.
