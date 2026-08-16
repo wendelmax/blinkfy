@@ -11,7 +11,7 @@ function createRevenueSharingRouter({ requireWorkspaceRole, requireClientAccess,
         controller.preview,
     );
     router.post('/allocations',
-        requireWorkspaceRole('owner', 'admin', 'recruiter'),
+        requireWorkspaceRole('owner', 'admin'),
         requireClientAccess,
         controller.confirmAllocation,
     );

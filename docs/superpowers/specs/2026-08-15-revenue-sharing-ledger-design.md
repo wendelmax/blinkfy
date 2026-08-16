@@ -105,8 +105,8 @@ Creates one compensating ledger entry and marks the allocation `reversed` in one
 ## Authorization and Audit
 
 - Workspace owners and admins may preview, confirm, list, and reverse.
-- Recruiters may preview, confirm, and list allocations only when they are the allocation recruiter and have access to the client.
-- Recruiters may not reverse allocations.
+- Recruiters may preview and list allocations only when they are the allocation recruiter and have access to the client.
+- Recruiters may not confirm or reverse allocations. Confirmation fixes the gross amount and basis-point split into an append-only ledger entry, so only an owner or admin may set those terms.
 - Every confirmation and reversal records actor, workspace, client, allocation, placement, currency, amounts, and basis points.
 - Audit metadata excludes bank details, card data, tax documents, provider secrets, and candidate private data.
 
@@ -143,7 +143,7 @@ The implemented routes are all scoped by workspace and client access:
 | Endpoint | Owner / admin | Recruiter | Result |
 | --- | --- | --- | --- |
 | `POST /api/blinkfy/clients/:clientId/revenue-sharing/preview` | Allowed | Allowed only for the recruiter's own marketplace placement | Calculates only; does not persist an allocation or audit event. |
-| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations` | Allowed | Allowed only for the recruiter's own marketplace placement | Creates the pending allocation, its positive ledger entry, and an audit event atomically. |
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations` | Allowed | Denied | Creates the pending allocation, its positive ledger entry, and an audit event atomically. |
 | `GET /api/blinkfy/clients/:clientId/revenue-sharing/ledger` | Allowed | Allowed only for allocations attributed to that recruiter | Returns allowlisted ledger evidence newest first. |
 | `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations/:allocationId/reverse` | Allowed | Denied | Appends one negative compensating entry and changes the allocation to `reversed` atomically. |
 

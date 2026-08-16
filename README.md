@@ -192,7 +192,7 @@ Todos os endpoints abaixo exigem um membro do workspace com acesso ao cliente:
 | Endpoint | Owner / admin | Recruiter |
 |----------|---------------|-----------|
 | `POST /api/blinkfy/clients/:clientId/revenue-sharing/preview` | Pode calcular preview | Somente a própria placement |
-| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations` | Pode confirmar | Somente a própria placement |
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations` | Pode confirmar | Não autorizado |
 | `GET /api/blinkfy/clients/:clientId/revenue-sharing/ledger` | Vê o ledger do cliente | Vê apenas as próprias allocations |
 | `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations/:allocationId/reverse` | Pode reverter | Não autorizado |
 

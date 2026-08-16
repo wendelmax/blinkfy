@@ -290,20 +290,16 @@ test('serializes concurrent confirmation requests from independent Prisma connec
     }
 });
 
-test('returns 404 when a recruiter confirms another recruiter\'s placement', async () => {
+test('forbids a recruiter from confirming an allocation, even for their own placement', async () => {
     const context = await createContext({ actorRole: 'recruiter' });
-    const otherRecruiter = await createUser('unauthorized-recruiter');
-    await prisma.workspaceMembership.create({
-        data: { workspaceId: context.workspace.id, userId: otherRecruiter.id, role: 'recruiter' },
-    });
 
     const response = await confirmAllocation(app, context, {
         placementId: context.placement.id,
         currency: 'BRL',
         grossAmountMinor: 100,
-    }, otherRecruiter);
+    }, context.recruiter);
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(403);
     await expect(prisma.placementRevenueAllocation.count({ where: { placementId: context.placement.id } })).resolves.toBe(0);
 });
 
