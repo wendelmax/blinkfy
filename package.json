@@ -18,5 +18,13 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "concurrently": "^9.2.1"
+  },
+  "overrides": {
+    "body-parser": "^2.3.0",
+    "qs": "^6.15.3",
+    "path-to-regexp": "^8.4.2",
+    "shell-quote": "^1.10.0",
+    "lodash": "^4.18.1",
+    "esbuild": "^0.28.2"
   }
 }
