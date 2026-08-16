@@ -3,14 +3,10 @@
  * Must be fully self-contained (no closures over external state).
  */
 
-function assertPositiveFiniteGross(value, label) {
-    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
-        throw new RangeError(`${label} must be a positive finite number`);
-    }
-}
-
 function calculateBrazilTaxes(grossBrl) {
-    assertPositiveFiniteGross(grossBrl, 'grossBrl');
+    if (typeof grossBrl !== 'number' || !Number.isFinite(grossBrl) || grossBrl <= 0) {
+        throw new RangeError('grossBrl must be a positive finite number');
+    }
     let rate = 0;
     let deduction = 0;
 
@@ -61,7 +57,9 @@ const MONOTRIBUTO_CATEGORIES = [
 ];
 
 function calculateArgentinaTaxes(grossArs) {
-    assertPositiveFiniteGross(grossArs, 'grossArs');
+    if (typeof grossArs !== 'number' || !Number.isFinite(grossArs) || grossArs <= 0) {
+        throw new RangeError('grossArs must be a positive finite number');
+    }
 
     const annualizedArs = grossArs * 12;
     // Above category K there is no Monotributo category (the taxpayer must
@@ -99,7 +97,9 @@ const RESICO_BRACKETS = [
 ];
 
 function calculateMexicoTaxes(grossMxn) {
-    assertPositiveFiniteGross(grossMxn, 'grossMxn');
+    if (typeof grossMxn !== 'number' || !Number.isFinite(grossMxn) || grossMxn <= 0) {
+        throw new RangeError('grossMxn must be a positive finite number');
+    }
 
     const bracket = RESICO_BRACKETS.find((b) => grossMxn <= b.limitMxn);
     const isr = grossMxn * bracket.rate;
