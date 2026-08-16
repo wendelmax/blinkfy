@@ -1,0 +1,76 @@
+# Revenue Sharing Ledger — Task 6 Verification
+
+Date: 2026-08-15 (America/Sao_Paulo)
+
+Implementation base: `d40c5a09f85b526406f82a1cf15b6c91bfc7db29` (`feat: add revenue ledger queries and reversals`)
+
+Database: `postgresql://user@127.0.0.1:55433/blinkfy_revenue_test`
+
+## Database migrations
+
+The literal command specified by the brief was attempted first:
+
+```sh
+TEST_DATABASE_URL='postgresql://user@127.0.0.1:55433/blinkfy_revenue_test' DATABASE_URL='postgresql://user@127.0.0.1:55433/blinkfy_revenue_test' npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+```
+
+It exited `127` with `sh: 1: prisma: not found`. This is expected: Prisma is
+intentionally installed in the `apps/api` workspace rather than hoisted at the
+repository root. No root dependency was added for this documentation-only task.
+
+The workspace-aware correction was run against the required database:
+
+```sh
+DATABASE_URL='postgresql://user@127.0.0.1:55433/blinkfy_revenue_test' npm exec --workspace=apps/api -- prisma migrate deploy --schema prisma/schema.prisma
+```
+
+Exit `0`: Prisma found 23 migrations and reported `No pending migrations to
+apply.`
+
+```sh
+TEST_DATABASE_URL='postgresql://user@127.0.0.1:55433/blinkfy_revenue_test' DATABASE_URL='postgresql://user@127.0.0.1:55433/blinkfy_revenue_test' apps/api/node_modules/.bin/prisma migrate status --schema apps/api/prisma/schema.prisma
+```
+
+Exit `0`: Prisma found 23 migrations and reported `Database schema is up to
+date!`
+
+## Complete repository verification
+
+| Command | Result | Exact evidence |
+| --- | --- | --- |
+| `TEST_DATABASE_URL='postgresql://user@127.0.0.1:55433/blinkfy_revenue_test' DATABASE_URL='postgresql://user@127.0.0.1:55433/blinkfy_revenue_test' npm run test --workspace=apps/api` | PASS, exit `0` | 71 test files passed; 216 tests passed. |
+| `npm run test --workspace=apps/web` | PASS, exit `0` | 21 test files passed; 36 tests passed. |
+| `npm run build --workspace=packages/shared` | PASS, exit `0` | Shared package build passed. |
+| `npm run build --workspace=apps/web` | PASS, exit `0` | Next.js 16.2.9 build passed and generated 8 pages. |
+| `docker compose build api web` | FAIL, exit `1` | Docker daemon unavailable: `failed to connect to the docker API at unix:///var/run/docker.sock ... no such file or directory`. Compose also warned that `version` is obsolete. |
+
+`npm ci --include=dev` completed before the successful rerun, installing 554
+packages. Its audit summary reported 11 vulnerabilities: 2 low, 1 moderate, 6
+high, and 2 critical. This task does not remediate dependencies; the inventory
+and any remediation belong to the separate post-merge #137 security gate.
+
+Therefore the only remaining local complete-repository blocker is Docker: the
+API, web, shared-package, and Prisma checks are green, but no Docker daemon is
+available in this environment.
+
+## Diff and boundary review
+
+```sh
+git diff --check origin/main...HEAD
+```
+
+Exit `0`, with no whitespace errors. The reviewed feature diff contains the
+ledger migration, schema, placement/revenue routes/controllers/services, and
+their tests. `paymentService.js` is absent from the changed-path list; the
+legacy `Placement` and `WalletTransaction` model definitions have no modified
+hunks. A targeted scan of the new ledger implementation/migration for provider
+calls, payment secrets/API keys, and floating-point/decimal financial fields
+returned only the intentional `transferred: false` response markers. The
+financial schema fields `grossAmountMinor`, `recruiterAmountMinor`, and
+`platformAmountMinor` are `Int`.
+
+## Delivery gate
+
+- Documentation commit: `docs: verify recruiter revenue sharing ledger` (SHA recorded in the Task 6 handoff report).
+- Issue #24 was not commented on or closed: this branch has not been reviewed or merged, and Docker verification remains blocked locally.
+- Issue #137 was not started. The `npm ci` audit inventory (11 vulnerabilities: 2 low, 1 moderate, 6 high, 2 critical) reinforces that it is a separate final security gate to execute only after this revenue-sharing PR is merged, in its own branch and PR.

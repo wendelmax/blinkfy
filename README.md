@@ -178,6 +178,33 @@ pm2 start ecosystem.config.cjs
 | [docs/blinkfy-hire-pilot.md](docs/blinkfy-hire-pilot.md) | Runbook do piloto Blinkfy Hire |
 | [docs/blinkfy-product-overview.md](docs/blinkfy-product-overview.md) | Visão de produto e posicionamento Blinkfy |
 
+## Revenue Sharing Ledger
+
+O ledger de compartilhamento de receita registra evidência contábil interna e
+auditável para uma colocação do marketplace. Ele não inicia checkout, escrow,
+payout, saque ou transferência de fundos; nenhum endpoint aceita credenciais
+de pagamento. Os modelos legados `Placement` e `WalletTransaction` e
+`apps/api/src/services/paymentService.js` permanecem fora desse fluxo e não
+foram alterados.
+
+Todos os endpoints abaixo exigem um membro do workspace com acesso ao cliente:
+
+| Endpoint | Owner / admin | Recruiter |
+|----------|---------------|-----------|
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/preview` | Pode calcular preview | Somente a própria placement |
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations` | Pode confirmar | Somente a própria placement |
+| `GET /api/blinkfy/clients/:clientId/revenue-sharing/ledger` | Vê o ledger do cliente | Vê apenas as próprias allocations |
+| `POST /api/blinkfy/clients/:clientId/revenue-sharing/allocations/:allocationId/reverse` | Pode reverter | Não autorizado |
+
+Valores são unidades menores inteiras e moedas são códigos ISO 4217 em
+maiúsculas. O split padrão é 70% para o recruiter (`7000` basis points) e 30%
+para Blinkfy (`3000`). Para uma receita bruta `grossAmountMinor`, o valor do
+recruiter é `floor(grossAmountMinor * recruiterBasisPoints / 10000)`; qualquer
+resíduo de arredondamento fica com Blinkfy. Allocations iniciam em `pending`.
+O modelo completo é `pending -> available -> reversed`, mas esta entrega só
+cria `pending` e permite a reversão compensatória para `reversed`; a promoção
+para `available` depende da futura política aprovada de escrow/retenção.
+
 ## Contribuindo
 
 Contribuições são bem-vindas. Abra uma issue ou PR.
