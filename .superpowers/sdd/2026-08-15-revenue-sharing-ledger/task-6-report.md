@@ -43,6 +43,13 @@ is recorded as prior documentary evidence, not as this commit's self-hash.
 - Shared build: passed.
 - Web build: Next.js 16.2.9 passed and generated 8 pages.
 - Docker build: failed because `/var/run/docker.sock` was unavailable.
+- Docker Desktop subsequently reproduced a pre-build context failure:
+  `invalid file request apps/api/node_modules/.bin/prisma`. Compose builds
+  from the repository root, so app-local ignore files did not exclude nested
+  `node_modules`. A root `.dockerignore` now excludes local dependency trees,
+  build/test artifacts, environment files, logs, `.git`, and `.superpowers`.
+  This is a minimal context fix only; Docker has not yet been rerun green and
+  remains an environmental CI/daemon blocker.
 - Dependency install: `npm ci --include=dev` installed 554 packages. Its audit
   summary reports 11 vulnerabilities (2 low, 1 moderate, 6 high, 2 critical);
   dependency remediation is explicitly deferred to the separate post-merge

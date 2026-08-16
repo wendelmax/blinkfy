@@ -53,6 +53,21 @@ Therefore the only remaining local complete-repository blocker is Docker: the
 API, web, shared-package, and Prisma checks are green, but no Docker daemon is
 available in this environment.
 
+### Docker context correction (pending rerun)
+
+Docker Desktop reproduced a separate context defect before the image build: the
+Compose build context is the repository root (`context: .`), so the
+`apps/api/.dockerignore` and `apps/web/.dockerignore` files did not apply.
+After `npm ci`, `docker.exe compose build api web` failed with
+`invalid file request apps/api/node_modules/.bin/prisma` because nested local
+`node_modules` entered the root build context. This is recorded as RED
+evidence, not a successful Docker verification.
+
+The root `.dockerignore` now excludes `.git`, `.superpowers`, root and nested
+`node_modules`, `.next`, `dist`, `coverage`, local `.env` files, and logs. It
+does not exclude source files, package manifests, or lockfiles. Docker image
+build verification remains pending an external Docker daemon/CI rerun.
+
 ## Diff and boundary review
 
 ```sh
