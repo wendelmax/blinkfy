@@ -27,7 +27,7 @@ async function fetchExchangeRate(toCurrency = 'BRL') {
             await prisma.exchangeRateLog.create({
                 data: { fromCur: 'USD', toCur: toCurrency, rate, source: 'api' },
             }).catch(() => null);
-            return rate;
+            return { rate, source: 'api' };
         }
     } catch (err) {
         console.warn(`Exchange rate API failed for ${toCurrency}, using fallback:`, err.message);
@@ -36,25 +36,29 @@ async function fetchExchangeRate(toCurrency = 'BRL') {
     await prisma.exchangeRateLog.create({
         data: { fromCur: 'USD', toCur: toCurrency, rate: fallback, source: 'env' },
     }).catch(() => null);
-    return fallback;
+    return { rate: fallback, source: 'env' };
 }
 
-async function getExchangeRate(toCurrency = 'BRL') {
+async function getExchangeRateWithSource(toCurrency = 'BRL') {
     const last = await prisma.exchangeRateLog.findFirst({
         where: { fromCur: 'USD', toCur: toCurrency },
         orderBy: { createdAt: 'desc' },
     });
     const maxAgeMs = 60 * 60 * 1000;
-    if (last && (Date.now() - last.createdAt.getTime() < maxAgeMs)) return last.rate;
+    if (last && (Date.now() - last.createdAt.getTime() < maxAgeMs)) return { rate: last.rate, source: last.source };
     return fetchExchangeRate(toCurrency);
+}
+
+async function getExchangeRate(toCurrency = 'BRL') {
+    return (await getExchangeRateWithSource(toCurrency)).rate;
 }
 
 exports.getExchangeRate = getExchangeRate;
 
 exports.calculateNetSalary = async (grossUsd, toCurrency = 'BRL') => {
-    const rate = await getExchangeRate(toCurrency);
+    const { rate, source } = await getExchangeRateWithSource(toCurrency);
     const grossLocal = grossUsd * rate;
-    return { grossUsd, grossLocal, currency: toCurrency, exchangeRate: rate };
+    return { grossUsd, grossLocal, currency: toCurrency, exchangeRate: rate, exchangeRateSource: source };
 };
 
 exports.getWalletSummaryForUser = async (userId, salaryUsd) => {

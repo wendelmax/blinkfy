@@ -33,12 +33,17 @@ describe('calculateArgentinaTaxes (Monotributo)', () => {
         expect(calculateArgentinaTaxes(20000000).monotributoFee).toBe(1614446);
     });
 
+    test('flags outOfRegimeRange when annualized gross exceeds category K', () => {
+        expect(calculateArgentinaTaxes(20000000).outOfRegimeRange).toBe(true);
+    });
+
     test('returns net gross minus the fixed monthly fee, floored at zero', () => {
         const result = calculateArgentinaTaxes(30000);
         expect(result.monotributoFee).toBe(49527);
         expect(result.netArs).toBe(0);
         expect(result.currency).toBe('ARS');
         expect(result.complianceStatus).toBe('READY_FOR_MONOTRIBUTO_PAYMENT');
+        expect(result.outOfRegimeRange).toBeFalsy();
     });
 });
 
@@ -65,5 +70,10 @@ describe('calculateMexicoTaxes (RESICO)', () => {
         expect(result.netMxn).toBeCloseTo(39560, 6);
         expect(result.currency).toBe('MXN');
         expect(result.complianceStatus).toBe('READY_FOR_RESICO_PAYMENT');
+        expect(result.outOfRegimeRange).toBeFalsy();
+    });
+
+    test('flags outOfRegimeRange when annualized gross exceeds the 3,500,000 MXN RESICO eligibility cap', () => {
+        expect(calculateMexicoTaxes(300000).outOfRegimeRange).toBe(true);
     });
 });

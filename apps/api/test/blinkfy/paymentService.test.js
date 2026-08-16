@@ -54,4 +54,12 @@ describe('getWalletSummaryForUser currency selection', () => {
         expect(summary.projections.currency).toBe('BRL');
         expect(summary.projections.regime).toBe('irrf');
     });
+
+    test('projections.exchangeRateSource is a real value ("api" or "env"), not undefined', async () => {
+        const user = await createUserWithProfile('argentina');
+
+        const summary = await paymentService.getWalletSummaryForUser(user.id, 1000);
+
+        expect(['api', 'env']).toContain(summary.projections.exchangeRateSource);
+    });
 });

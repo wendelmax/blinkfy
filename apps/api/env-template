@@ -16,5 +16,11 @@ SMTP_FROM=NewOne <noreply@yourdomain.com>
 
 # Optional
 EXCHANGE_RATE=5.5
+# Optional overrides for the Argentina exchange-rate lookup (URL override / fallback rate)
+EXCHANGE_RATE_API_ARS=
+EXCHANGE_RATE_ARS=
+# Optional overrides for the Mexico exchange-rate lookup (URL override / fallback rate)
+EXCHANGE_RATE_API_MXN=
+EXCHANGE_RATE_MXN=
 GITHUB_TOKEN=
 TASKLETS_MAX_WORKERS=auto

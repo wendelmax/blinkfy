@@ -64,9 +64,11 @@ function calculateArgentinaTaxes(grossArs) {
     const annualizedArs = grossArs * 12;
     // Above category K there is no Monotributo category (the taxpayer must
     // switch to "Responsable Inscripto"); this calculator caps at K rather
-    // than modeling that separate regime.
-    const bracket = MONOTRIBUTO_CATEGORIES.find((c) => annualizedArs <= c.annualLimitArs)
-        || MONOTRIBUTO_CATEGORIES[MONOTRIBUTO_CATEGORIES.length - 1];
+    // than modeling that separate regime, and flags outOfRegimeRange so
+    // callers know the figure understates the real (progressive) tax burden.
+    const matchedCategory = MONOTRIBUTO_CATEGORIES.find((c) => annualizedArs <= c.annualLimitArs);
+    const outOfRegimeRange = !matchedCategory;
+    const bracket = matchedCategory || MONOTRIBUTO_CATEGORIES[MONOTRIBUTO_CATEGORIES.length - 1];
 
     const monotributoFee = bracket.monthlyFeeArs;
     const netArs = Math.max(0, grossArs - monotributoFee);
@@ -79,6 +81,7 @@ function calculateArgentinaTaxes(grossArs) {
         taxRateEffective: (monotributoFee / grossArs) * 100,
         currency: 'ARS',
         complianceStatus: 'READY_FOR_MONOTRIBUTO_PAYMENT',
+        outOfRegimeRange,
     };
 }
 
@@ -91,8 +94,9 @@ function calculateMexicoTaxes(grossMxn) {
     // month's income (non-marginal), unlike Brazil's IRRF. Rates unchanged for
     // 2026 per Anexo 8 of the RMF 2026 (source:
     // https://resicocalc.com/blog/tablas-isr-resico-2026). Top bracket's
-    // eligibility cap is 3,500,000 MXN annual (~291,666.66/month); this
-    // calculator does not enforce that cap, only the rate.
+    // eligibility cap is 3,500,000 MXN annual (~291,666.66/month); the rate
+    // table's Infinity upper limit is for rate lookup only — the actual
+    // eligibility cap is enforced separately below via outOfRegimeRange.
     const RESICO_BRACKETS = [
         { limitMxn: 25000, rate: 0.01 },
         { limitMxn: 50000, rate: 0.011 },
@@ -101,6 +105,7 @@ function calculateMexicoTaxes(grossMxn) {
         { limitMxn: Infinity, rate: 0.025 },
     ];
 
+    const RESICO_ANNUAL_ELIGIBILITY_CAP_MXN = 3500000;
     const bracket = RESICO_BRACKETS.find((b) => grossMxn <= b.limitMxn);
     const isr = grossMxn * bracket.rate;
 
@@ -111,6 +116,7 @@ function calculateMexicoTaxes(grossMxn) {
         taxRateEffective: bracket.rate * 100,
         currency: 'MXN',
         complianceStatus: 'READY_FOR_RESICO_PAYMENT',
+        outOfRegimeRange: grossMxn * 12 > RESICO_ANNUAL_ELIGIBILITY_CAP_MXN,
     };
 }
 

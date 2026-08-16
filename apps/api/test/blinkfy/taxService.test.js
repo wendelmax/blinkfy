@@ -12,6 +12,14 @@ describe('resolveCurrencyForResidence', () => {
     ])('%s -> %s', (taxResidence, expectedCurrency) => {
         expect(taxService.resolveCurrencyForResidence(taxResidence)).toBe(expectedCurrency);
     });
+
+    test.each([
+        ['Argentina', 'ARS'],
+        [' argentina ', 'ARS'],
+        ['ARGENTINA', 'ARS'],
+    ])('%s -> %s (trim/lowercase normalization, does not fall back to BRL)', (taxResidence, expectedCurrency) => {
+        expect(taxService.resolveCurrencyForResidence(taxResidence)).toBe(expectedCurrency);
+    });
 });
 
 describe('calculateTaxesByResidence', () => {
@@ -37,5 +45,16 @@ describe('calculateTaxesByResidence', () => {
         expect(result.regime).toBe('irrf');
         expect(result.taxAmountLocal).toBe(result.irrf);
         expect(result.netLocal).toBe(result.netBrl);
+    });
+
+    test('rejects with a RangeError for invalid gross input, without falling back to sync', async () => {
+        await expect(taxService.calculateTaxesByResidence('argentina', -5)).rejects.toThrow(RangeError);
+    });
+
+    test('does not log the misleading "falling back to sync" message for a validation error', async () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        await expect(taxService.calculateTaxesByResidence('argentina', -5)).rejects.toThrow(RangeError);
+        expect(spy).not.toHaveBeenCalled();
+        spy.mockRestore();
     });
 });
