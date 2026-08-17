@@ -210,3 +210,27 @@ export interface CheckoutStatusResponse {
     paymentStatus: string | null;
     subscriptionId: string | null;
 }
+
+export interface NfeEmission {
+    id: string;
+    invoiceId: string;
+    nfeNumber: string | null;
+    status: string;
+    cnaeCode: string;
+    amountUsd: number;
+    amountBrl: number;
+    issExempt: boolean;
+    createdAt: string;
+}
+
+export interface NfeSummary {
+    totalEmissions: number;
+    authorized: number;
+    pending: number;
+    rejected: number;
+    cancelled: number;
+    totalAmountBrl: number;
+    totalAmountUsd: number;
+    recentEmissions: NfeEmission[];
+}
+}

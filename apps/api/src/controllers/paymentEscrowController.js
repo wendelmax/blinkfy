@@ -2,6 +2,7 @@ const escrowService = require('../services/blinkfy/escrowService');
 const invoiceService = require('../services/blinkfy/invoiceService');
 const platformFeeService = require('../services/blinkfy/platformFeeService');
 const paymentService = require('../services/paymentService');
+const { createNfeEmission } = require('../services/blinkfy/nfeEmissionService');
 
 exports.getEscrowSummary = async (req, res) => {
     try {
@@ -122,6 +123,15 @@ exports.markInvoicePaid = async (req, res) => {
     try {
         const { invoiceId } = req.params;
         const invoice = await invoiceService.markInvoicePaid(invoiceId);
+
+        if (invoice.taxResidence === 'brazil' || !invoice.taxResidence) {
+            try {
+                await createNfeEmission({ invoiceId: invoice.id, userId: invoice.userId });
+            } catch (nfeError) {
+                console.warn('NF-e auto-creation skipped:', nfeError.message);
+            }
+        }
+
         res.json(invoice);
     } catch (err) {
         console.error('markInvoicePaid error:', err);

@@ -33,6 +33,7 @@ model User {
   marketplacePlacements MarketplacePlacement[] @relation("MarketplacePlacementRecruiter")
   revenueAllocations   PlacementRevenueAllocation[] @relation("PlacementRevenueAllocationRecruiter")
   invoices             Invoice[]
+  nfeEmissions         NfeEmission[]
 }
 
 enum UserType {
@@ -203,6 +204,7 @@ model Invoice {
   createdAt       DateTime @default(now())
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   placement       Placement? @relation(fields: [placementId], references: [id], onDelete: SetNull)
+  nfeEmissions    NfeEmission[]
 
   @@index([userId, status])
   @@index([placementId])
@@ -221,6 +223,42 @@ model PlatformFee {
 
   @@index([placementId, feeType])
   @@map("platform_fees")
+}
+
+model NfeEmission {
+  id                  String   @id @default(cuid())
+  invoiceId           String
+  userId              String
+  nfeNumber           String?  @unique
+  nfeKey              String?  // Chave de Acesso (43 digits)
+  provider            String   @default("focus_nfe")
+  providerNfeId       String?  // External provider reference
+  status              String   @default("pending") // pending | processing | authorized | rejected | cancelled | error
+  rejectionReason     String?
+  cnaeCode            String
+  serviceDescription  String
+  amountUsd           Float
+  amountBrl           Float
+  exchangeRate        Float
+  exchangeRateSource  String   @default("frankfurter")
+  taxResidence        String?
+  taxRegime           String?  // simples_nacional | lucro_presumido | mei
+  issExempt           Boolean  @default(false)
+  protocolNumber      String?  // Authorization protocol from Receita Federal
+  authorizedAt        DateTime?
+  cancelledAt         DateTime?
+  xmlUri              String?  // S3/CDN URI for NF-e XML
+  pdfUri              String?  // S3/CDN URI for NF-e DANFE PDF
+  emittedAt           DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  invoice             Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([invoiceId])
+  @@index([providerNfeId])
+  @@map("nfe_emissions")
 }
 
 model ExchangeRateLog {
