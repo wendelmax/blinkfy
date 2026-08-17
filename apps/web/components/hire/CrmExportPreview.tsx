@@ -17,7 +17,7 @@ export function CrmExportPreview({ jobId, applicationId }: Props) {
             setPreview(response.preview);
         } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'The CRM preview could not be created.'); }
     }
-    return <section aria-label="CRM export preview" style={{ marginTop: 10, padding: 10, border: '1px solid #d7dce2', borderRadius: 6 }}>
+    return <section aria-label="CRM export preview" className="mt-2.5 p-2.5 border border-border-input rounded-md">
         <h4>CRM export preview</h4>
         <p>Consent and human approval are required. No external transmission occurs.</p>
         <label>CRM <select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="hubspot">HubSpot</option><option value="salesforce">Salesforce</option><option value="pipedrive">Pipedrive</option></select></label>

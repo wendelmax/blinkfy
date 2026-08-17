@@ -23,17 +23,17 @@ export function ScreeningControls({ jobId, applicationId, candidateName }: Props
     }
 
     const status: ScreeningSessionStatus | null = session?.status ?? null;
-    return <section aria-label={`Screening controls for ${candidateName}`} style={{ marginTop: 10, padding: 10, border: '1px solid #e2e8f0', borderRadius: 8 }}>
+    return <section aria-label={`Screening controls for ${candidateName}`} className="mt-2.5 p-2.5 border border-border-input rounded-lg">
         <strong>Screening session</strong>
         <p>{status ? `Status: ${status}` : 'No screening session invited.'}</p>
         <small>Do not record screening consent until the candidate has actively opted in.</small>
         {!status && <button type="button" disabled={busy} onClick={() => void action('invite')}>Invite to screening</button>}
-        {status === 'invited' && <div style={{ display: 'grid', gap: 6 }}>
+        {status === 'invited' && <div className="grid gap-1.5">
             <label><input type="checkbox" checked={false} onChange={(event) => { if (event.target.checked) void action('consent', { consentVersion }); }} disabled={busy} /> Record candidate consent ({consentVersion})</label>
             <label>Consent version <input value={consentVersion} onChange={(event) => setConsentVersion(event.target.value)} disabled={busy} /></label>
             <small>Do not check this box until the candidate has actively opted in.</small>
         </div>}
-        {status === 'consented' && <div style={{ display: 'grid', gap: 6 }}>
+        {status === 'consented' && <div className="grid gap-1.5">
             <label>Screening time <input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} disabled={busy} required /></label>
             <button type="button" disabled={busy || !scheduledAt} onClick={() => void action('schedule', { scheduledAt: new Date(scheduledAt).toISOString() })}>Schedule screening</button>
         </div>}

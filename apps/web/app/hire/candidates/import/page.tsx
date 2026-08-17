@@ -11,9 +11,11 @@ export default function CandidateImportPage() {
     useEffect(() => setClientId(getActiveClientId()), []);
 
     return (
-        <main style={{ maxWidth: 760, margin: '32px auto', padding: '0 20px' }}>
-            <Link href="/hire">← Hire workspace</Link>
-            <h1>Import permitted candidates</h1>
+        <main className="max-w-[760px] mx-auto py-8 px-5">
+            <Link href="/hire" className="text-sm text-text-muted hover:text-primary mb-4 inline-block">
+                &larr; Hire workspace
+            </Link>
+            <h1 className="text-2xl font-bold mb-2">Import permitted candidates</h1>
             {!clientId && <p role="alert">Choose a workspace and client from the Hire workspace before importing candidates.</p>}
             <CandidateImport clientId={clientId} />
         </main>

@@ -53,18 +53,26 @@ export default function TalentPage() {
         }
     }
 
-    return <main style={{ maxWidth: 900, margin: '32px auto', padding: '0 20px' }}>
-        <Link href="/">← Blinkfy home</Link>
-        <h1>Blinkfy Talent</h1>
-        <p>Your profile is free. You control who can discover it and which companies may receive it.</p>
-        {state === 'loading' && <p>Loading your profile…</p>}
-        {state === 'error' && <p role="alert">{message}</p>}
-        {state === 'ready' && profile && analytics && <>
-            <TalentProfileForm profile={profile} onSaved={setProfile} />
-            <VisibilityControl visibility={profile.visibility} onChange={changeVisibility} />
-            <ConsentCenter initialItems={consents} />
-            <CandidateGrowthPanel analytics={analytics} />
-            <ScreeningInvitations />
-        </>}
-    </main>;
+    return (
+        <main className="max-w-[900px] mx-auto py-8 px-5">
+            <Link href="/" className="text-sm text-text-muted hover:text-primary mb-4 inline-block">
+                &larr; Blinkfy home
+            </Link>
+            <h1 className="text-2xl font-bold mb-2">Blinkfy Talent</h1>
+            <p className="text-text-muted text-sm mb-6">
+                Your profile is free. You control who can discover it and which companies may receive it.
+            </p>
+            {state === 'loading' && <p className="text-text-muted text-sm">Loading your profile...</p>}
+            {state === 'error' && <p role="alert">{message}</p>}
+            {state === 'ready' && profile && analytics && (
+                <div className="space-y-6">
+                    <TalentProfileForm profile={profile} onSaved={setProfile} />
+                    <VisibilityControl visibility={profile.visibility} onChange={changeVisibility} />
+                    <ConsentCenter initialItems={consents} />
+                    <CandidateGrowthPanel analytics={analytics} />
+                    <ScreeningInvitations />
+                </div>
+            )}
+        </main>
+    );
 }

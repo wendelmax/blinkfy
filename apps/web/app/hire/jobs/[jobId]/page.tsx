@@ -53,23 +53,29 @@ export default function JobPipelinePage() {
     }, [params.jobId]);
 
     return (
-        <main style={{ maxWidth: 1440, margin: '32px auto', padding: '0 20px' }}>
-            <Link href="/hire">← Hire workspace</Link>
-            {state === 'loading' && <p>Loading job…</p>}
+        <main className="max-w-[1440px] mx-auto py-8 px-5">
+            <Link href="/hire" className="text-sm text-text-muted hover:text-primary mb-4 inline-block">
+                &larr; Hire workspace
+            </Link>
+            {state === 'loading' && <p className="text-text-muted text-sm">Loading job...</p>}
             {state === 'error' && <p role="alert">{message}</p>}
-            {state === 'ready' && job && <>
-                <h1>{job.title}</h1>
-                <p>{job.requirements.join(' · ')}</p>
-                <ConciergeQueue jobId={job.id} applications={applications} />
-                <UnifiedInbox clientId={job.clientId} jobId={job.id} />
-                <SchedulingPolicyPanel clientId={job.clientId} />
-                <WebhookSubscriptionPanel clientId={job.clientId} />
-                <IntegrationCatalogPanel clientId={job.clientId} />
-                <McpManifestPanel clientId={job.clientId} />
-                <McpToolPreviewPanel clientId={job.clientId} />
-                <McpAuditPanel clientId={job.clientId} />
-                <PipelineBoard jobId={job.id} applications={applications} />
-            </>}
+            {state === 'ready' && job && (
+                <div className="space-y-6">
+                    <header>
+                        <h1 className="text-2xl font-bold mb-1">{job.title}</h1>
+                        <p className="text-text-muted text-sm">{job.requirements.join(' · ')}</p>
+                    </header>
+                    <ConciergeQueue jobId={job.id} applications={applications} />
+                    <UnifiedInbox clientId={job.clientId} jobId={job.id} />
+                    <SchedulingPolicyPanel clientId={job.clientId} />
+                    <WebhookSubscriptionPanel clientId={job.clientId} />
+                    <IntegrationCatalogPanel clientId={job.clientId} />
+                    <McpManifestPanel clientId={job.clientId} />
+                    <McpToolPreviewPanel clientId={job.clientId} />
+                    <McpAuditPanel clientId={job.clientId} />
+                    <PipelineBoard jobId={job.id} applications={applications} />
+                </div>
+            )}
         </main>
     );
 }

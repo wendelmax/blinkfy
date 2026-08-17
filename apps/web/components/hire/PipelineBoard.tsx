@@ -80,18 +80,18 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
             <h2>Reviewed pipeline</h2>
             <p>Scores support human review; they never reject candidates automatically.</p>
             {error && <p role="alert">{error}</p>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(220px, 1fr))', gap: 12, overflowX: 'auto' }}>
+            <div className="kanban-grid">
                 {APPLICATION_STAGES.map((stage) => {
                     const inStage = items.filter((application) => application.stage === stage);
                     return (
-                        <section key={stage} aria-label={`${stageLabel(stage)} column`} style={{ background: '#f5f7fa', padding: 12, borderRadius: 8 }}>
+                        <section key={stage} aria-label={`${stageLabel(stage)} column`} className="bg-surface-alt rounded-lg p-3">
                             <h3>{stageLabel(stage)} ({inStage.length})</h3>
                             {inStage.length === 0 && <p>No candidates in this stage.</p>}
                             {inStage.map((application) => {
                                 const targetStage = NEXT_APPLICATION_STAGE[application.stage as keyof typeof NEXT_APPLICATION_STAGE];
                                 const override = overrides[application.id] ?? { score: '', reason: '' };
                                 return (
-                                    <article key={application.id} style={{ background: '#fff', padding: 12, marginBottom: 10, borderRadius: 8 }}>
+                                    <article key={application.id} className="bg-surface rounded-lg p-3 mb-2.5">
                                         <strong>{application.fullName}</strong>
                                         {application.currentTitle && <p>{application.currentTitle}</p>}
                                         <ConsentBadge consentRecorded={application.consentRecorded} />
@@ -105,7 +105,7 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                                         {application.score ? <FitScoreCard score={application.score} /> : <p>Score not yet computed.</p>}
                                         {targetStage && <button type="button" onClick={() => updateStage(application, targetStage)}>Move to {stageLabel(targetStage)}</button>}
                                         {stage !== 'rejected' && stage !== 'shortlisted' && <button type="button" onClick={() => setRejectionTarget(application)}>Reject with reason</button>}
-                                        <fieldset style={{ marginTop: 10 }}>
+                                        <fieldset className="mt-2.5">
                                             <legend>Reviewer score override</legend>
                                             <label>
                                                 Score
@@ -125,22 +125,22 @@ export function PipelineBoard({ jobId, applications }: PipelineBoardProps) {
                 })}
             </div>
             {rejectionTarget && (
-                <div role="dialog" aria-modal="true" aria-labelledby="rejection-title" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'grid', placeItems: 'center' }}>
-                    <form onSubmit={(event) => { event.preventDefault(); if (rejectionReason.trim()) updateStage(rejectionTarget, 'rejected', rejectionReason.trim()); }} style={{ background: '#fff', padding: 24, maxWidth: 480 }}>
+                <div role="dialog" aria-modal="true" aria-labelledby="rejection-title" className="[role=dialog]">
+                    <form onSubmit={(event) => { event.preventDefault(); if (rejectionReason.trim()) updateStage(rejectionTarget, 'rejected', rejectionReason.trim()); }} className="bg-surface p-6 max-w-[480px]">
                         <h2 id="rejection-title">Record a human reviewer reason</h2>
                         <p>Rejecting {rejectionTarget.fullName} requires a documented reason.</p>
                         <label htmlFor="rejection-reason">Reason</label>
-                        <textarea id="rejection-reason" value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} required rows={4} style={{ display: 'block', width: '100%' }} />
+                        <textarea id="rejection-reason" value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} required rows={4} className="block w-full" />
                         <button type="button" onClick={() => setRejectionTarget(null)}>Cancel</button>
                         <button type="submit" disabled={!rejectionReason.trim()}>Confirm rejection</button>
                     </form>
                 </div>
             )}
-            {dossier && <div role="dialog" aria-modal="true" aria-labelledby="dossier-title" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', display: 'grid', placeItems: 'center' }}>
-                <section style={{ background: '#fff', padding: 24, maxWidth: 720, maxHeight: '80vh', overflow: 'auto' }}>
+            {dossier && <div role="dialog" aria-modal="true" aria-labelledby="dossier-title" className="[role=dialog]">
+                <section className="bg-surface p-6 max-w-[720px] max-h-[80vh] overflow-auto">
                     <h2 id="dossier-title">Screening dossier: {dossier.application.fullName}</h2>
                     <p>Session: {dossier.session.status} · Consent version: {dossier.session.consentVersion ?? 'not specified'}</p>
-                    {dossier.summary && <section aria-label="Screening review summary" style={{ padding: 12, background: '#f5f7fa', borderRadius: 8 }}>
+                    {dossier.summary && <section aria-label="Screening review summary" className="p-3 bg-surface-alt rounded-lg">
                         <h3>Human review summary</h3>
                         <p>{dossier.summary.reviewReady ? 'Ready for human review' : 'Evidence is still incomplete'}</p>
                         <p>{dossier.summary.evidenceCount} evidence item(s) · Score: {dossier.summary.score ?? 'not available'}</p>

@@ -103,11 +103,11 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         } finally { setBusy(null); }
     }
 
-    return <section aria-labelledby="candidate-growth-heading" style={{ marginTop: 24, padding: 20, border: '1px solid #d8dee9', borderRadius: 10 }}>
+    return <section aria-labelledby="candidate-growth-heading" className="mt-6 p-5 border border-border-strong rounded-[10px]">
         <h2 id="candidate-growth-heading">Candidate growth</h2>
         <p>Use your profile to build a stronger network. Every generated asset is a draft and requires your approval before sharing.</p>
 
-        <div style={{ display: 'grid', gap: 8, margin: '16px 0' }}>
+        <div className="grid gap-2 my-4">
             <strong>Positioning: {analytics.profileCompleteness.percentage}% complete</strong>
             <progress aria-label="Profile completeness" value={analytics.profileCompleteness.percentage} max="100" />
             <span>{analytics.profileCompleteness.completed} of {analytics.profileCompleteness.total} positioning fields completed · {analytics.activeConsentCount} active consent(s)</span>
@@ -115,13 +115,13 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
             {analytics.nextActions.length > 0 && <small>Next: {analytics.nextActions.map((action) => ACTION_LABELS[action] ?? action).join(', ')}</small>}
         </div>
 
-        <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        <div className="grid gap-2 mb-4">
             <label htmlFor="target-role">Target role for resume draft</label>
             <input id="target-role" value={targetRole} onChange={(event) => setTargetRole(event.target.value)} placeholder="e.g. Account Executive" />
             <button type="button" onClick={() => void createResumeDraft()} disabled={busy !== null}>{busy === 'resume' ? 'Creating…' : 'Create resume draft'}</button>
         </div>
 
-        <form onSubmit={createEngagementDraft} style={{ display: 'grid', gap: 8 }}>
+        <form onSubmit={createEngagementDraft} className="grid gap-2">
             <label htmlFor="engagement-topic">Topic for a value-network draft</label>
             <input id="engagement-topic" value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="e.g. discovery-led sales" required />
             <label htmlFor="engagement-format">Draft type</label>
@@ -131,26 +131,26 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
             <button type="submit" disabled={busy !== null}>{busy === 'engagement' ? 'Creating…' : 'Create engagement draft'}</button>
         </form>
 
-        <section aria-labelledby="value-network-heading" style={{ marginTop: 16 }}>
+        <section aria-labelledby="value-network-heading" className="mt-4">
             <h3 id="value-network-heading">Value network suggestions</h3>
             <p>These are private recommendations. Nothing is contacted or published automatically.</p>
             <button type="button" onClick={() => void loadRecommendations()}>Find relevant connections</button>
             {networkLoaded && (recommendations.length === 0 ? <p>No matching connections found.</p> : <ul>{recommendations.map((recommendation) => <li key={recommendation.id}><strong>{recommendation.name}</strong> · {recommendation.role} <small>· approval required</small></li>)}</ul>)}
         </section>
 
-        <section aria-labelledby="talent-usage-heading" style={{ marginTop: 16 }}>
+        <section aria-labelledby="talent-usage-heading" className="mt-4">
             <h3 id="talent-usage-heading">Plan usage</h3>
             <button type="button" onClick={() => void loadUsage()}>View plan usage</button>
             {usage && <div role="status"><p>Plan: {usage.plan} · Status: {usage.status}</p><ul>{usage.usage.map((item) => <li key={item.feature}>{item.feature}: {item.used}/{item.limit} used · {item.remaining} remaining</li>)}</ul><p>Draft performance: {usage.drafts.total} total · {usage.drafts.byStatus.pending} pending · {usage.drafts.byStatus.approved} approved · {usage.drafts.byStatus.rejected} rejected</p></div>}
         </section>
 
-        <section aria-labelledby="talent-draft-history-heading" style={{ marginTop: 16 }}>
+        <section aria-labelledby="talent-draft-history-heading" className="mt-4">
             <h3 id="talent-draft-history-heading">Draft history</h3>
             <button type="button" onClick={() => void loadHistory()}>View saved drafts</button>
             {history.length > 0 && <ul>{history.map((item) => <li key={item.id}>{item.kind} · {item.status} · {new Date(item.createdAt).toLocaleDateString()} {item.status === 'pending' && <><button type="button" onClick={() => void reviewDraft(item.id, 'approved')}>Approve</button><button type="button" onClick={() => void reviewDraft(item.id, 'rejected')}>Reject</button></>}</li>)}</ul>}
         </section>
 
-        <section aria-labelledby="talent-plans-heading" style={{ marginTop: 16 }}>
+        <section aria-labelledby="talent-plans-heading" className="mt-4">
             <h3 id="talent-plans-heading">Plans</h3>
             <small>Checkout is not charged here; a human-approved billing flow is required.</small>
             <button type="button" onClick={() => void loadPlans()}>Compare Free and Pro</button>
@@ -159,7 +159,7 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
         </section>
 
         {error && <p role="alert">{error}</p>}
-        {resumeDraft && <article aria-label="Resume draft" style={{ marginTop: 16 }}><h3>Resume draft</h3><p>{String(resumeDraft.summary ?? 'No summary generated.')}</p><small>Draft only · review before using</small></article>}
-        {engagementDraft && <article aria-label="Engagement draft" style={{ marginTop: 16 }}><h3>Engagement draft</h3><p>{String(engagementDraft.content ?? '')}</p><small>Draft only · review before sharing</small></article>}
+        {resumeDraft && <article aria-label="Resume draft" className="mt-4"><h3>Resume draft</h3><p>{String(resumeDraft.summary ?? 'No summary generated.')}</p><small>Draft only · review before using</small></article>}
+        {engagementDraft && <article aria-label="Engagement draft" className="mt-4"><h3>Engagement draft</h3><p>{String(engagementDraft.content ?? '')}</p><small>Draft only · review before sharing</small></article>}
     </section>;
 }

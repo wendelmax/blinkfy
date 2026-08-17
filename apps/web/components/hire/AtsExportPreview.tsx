@@ -23,7 +23,7 @@ export function AtsExportPreview({ jobId, applicationId }: Props) {
         }
     }
 
-    return <section aria-label="ATS export preview" style={{ marginTop: 10, padding: 10, border: '1px solid #d7dce2', borderRadius: 6 }}>
+    return <section aria-label="ATS export preview" className="mt-2.5 p-2.5 border border-border-input rounded-md">
         <h4>ATS export preview</h4>
         <p>Consent and human approval are required. No external transmission occurs.</p>
         <label>Provider <select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="greenhouse">Greenhouse</option><option value="lever">Lever</option><option value="workable">Workable</option></select></label>

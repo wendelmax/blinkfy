@@ -29,10 +29,10 @@ export function ScreeningFeedback({ jobId, applicationId, candidateName }: Props
         finally { setSaving(false); }
     }
 
-    return <section aria-label={`Recruiter feedback for ${candidateName}`} style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
+    return <section aria-label={`Recruiter feedback for ${candidateName}`} className="mt-4 pt-3 border-t border-border-input">
         <h3>Recruiter feedback</h3>
         <p>Record evidence-based context for the next human reviewer. This does not advance or reject the application automatically.</p>
-        <form onSubmit={submit} style={{ display: 'grid', gap: 6 }}>
+        <form onSubmit={submit} className="grid gap-1.5">
             <label>Assessment <select value={status} onChange={(event) => setStatus(event.target.value as Feedback['status'])}><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Negative</option><option value="needs_review">Needs review</option></select></label>
             <label>Notes <textarea value={note} onChange={(event) => setNote(event.target.value)} required maxLength={2000} rows={3} placeholder="What should the next reviewer validate?" /></label>
             <button type="submit" disabled={saving || !note.trim()}>{saving ? 'Saving…' : 'Save feedback'}</button>

@@ -23,11 +23,15 @@ export default function NewJobPage() {
     }, []);
 
     return (
-        <main style={{ maxWidth: 760, margin: '32px auto', padding: '0 20px' }}>
-            <Link href="/hire">← Hire workspace</Link>
-            <h1>Create a job</h1>
-            <p>Weights make the advisory Fit Score transparent. They must total 100.</p>
-            {!ready && <p role="status">Loading active client…</p>}
+        <main className="max-w-[760px] mx-auto py-8 px-5">
+            <Link href="/hire" className="text-sm text-text-muted hover:text-primary mb-4 inline-block">
+                &larr; Hire workspace
+            </Link>
+            <h1 className="text-2xl font-bold mb-2">Create a job</h1>
+            <p className="text-text-muted text-sm mb-6">
+                Weights make the advisory Fit Score transparent. They must total 100.
+            </p>
+            {!ready && <p role="status">Loading active client...</p>}
             {ready && !clientId && <p role="alert">Choose a workspace and client from the Hire workspace before creating a job.</p>}
             {ready && clientId && <JobForm clientId={clientId} onCreated={(job) => router.push(`/hire/jobs/${job.id}`)} />}
         </main>

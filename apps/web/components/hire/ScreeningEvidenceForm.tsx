@@ -29,10 +29,10 @@ export function ScreeningEvidenceForm({ jobId, applicationId, onAdded }: Props) 
         finally { setSaving(false); }
     }
 
-    return <section aria-label="Add screening evidence" style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
+    return <section aria-label="Add screening evidence" className="mt-4 pt-3 border-t border-border-input">
         <h3>Add evidence</h3>
         <p>Record only consented screening material. Set retention when the source has a deletion deadline.</p>
-        <form onSubmit={submit} style={{ display: 'grid', gap: 6 }}>
+        <form onSubmit={submit} className="grid gap-1.5">
             <label>Evidence type <select value={kind} onChange={(event) => setKind(event.target.value as Evidence['kind'])}><option value="transcript">Transcript</option><option value="recording">Recording</option><option value="insight">Insight</option></select></label>
             <label>Content <textarea value={content} onChange={(event) => setContent(event.target.value)} rows={3} placeholder="Paste transcript or insight" /></label>
             <label>Evidence URI <input value={uri} onChange={(event) => setUri(event.target.value)} placeholder="https://…" /></label>

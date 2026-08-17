@@ -28,7 +28,7 @@ export function CandidateImport({ clientId }: { clientId: string }) {
     async function recordConsent(candidateId: string) {
         const evidence = evidenceByCandidate[candidateId]?.trim();
         if (!evidence) {
-            setError('Record the candidate’s consent evidence before sharing.');
+            setError("Record the candidate's consent evidence before sharing.");
             return;
         }
         setError('');
@@ -97,7 +97,7 @@ export function CandidateImport({ clientId }: { clientId: string }) {
                             const consentRecorded = consentedCandidateIds[candidate.id];
                             const shared = sharedCandidateIds[candidate.id];
                             return (
-                                <fieldset key={candidate.id} style={{ marginTop: 12 }}>
+                                <fieldset key={candidate.id} className="mt-3">
                                     <legend>{candidate.fullName}</legend>
                                     <label>
                                         Consent evidence

@@ -28,7 +28,7 @@ export function ConsentCenter({ initialItems }: { initialItems: TalentConsentSum
         <p>Review which companies may receive your profile. Consent evidence is never shown here.</p>
         {error && <p role="alert">{error}</p>}
         {items.length === 0 ? <p>No presentation consents yet.</p> : <ul>
-            {items.map((consent) => <li key={consent.id} style={{ marginBottom: 12 }}>
+            {items.map((consent) => <li key={consent.id} className="mb-3">
                 <strong>{consent.client?.name ?? 'Global consent'}</strong>
                 <span> — {consent.purpose} — {consent.status === 'active' ? 'Active' : 'Revoked'}</span>
                 {consent.status === 'active' && <button type="button" onClick={() => revoke(consent)} disabled={revoking === consent.id}> {revoking === consent.id ? 'Revoking…' : 'Revoke'} </button>}

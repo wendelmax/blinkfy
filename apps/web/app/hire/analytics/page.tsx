@@ -59,12 +59,16 @@ export default function AnalyticsPage() {
     }
 
     return (
-        <main style={{ maxWidth: 1080, margin: '32px auto', padding: '0 20px' }}>
-            <Link href="/hire">← Hire workspace</Link>
-            <header>
-                <p>BLINKFY HIRE / PILOT</p>
-                <h1>Pipeline analytics</h1>
-                <p>Operational metrics only — analytics never rejects a candidate or changes a stage.</p>
+        <main className="max-w-[1080px] mx-auto py-8 px-5">
+            <Link href="/hire" className="text-sm text-text-muted hover:text-primary mb-4 inline-block">
+                &larr; Hire workspace
+            </Link>
+            <header className="mb-6">
+                <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-1">Blinkfy Hire / Pilot</p>
+                <h1 className="text-2xl font-bold mb-2">Pipeline analytics</h1>
+                <p className="text-text-muted text-sm">
+                    Operational metrics only — analytics never rejects a candidate or changes a stage.
+                </p>
             </header>
             <AnalyticsDashboard
                 state={state}

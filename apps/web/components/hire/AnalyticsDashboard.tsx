@@ -48,7 +48,7 @@ type AnalyticsDashboardProps = AnalyticsFilters & {
 export function AnalyticsDashboard({ state, summary, message, jobId, jobs, from, to, onJobIdChange, onFromChange, onToChange, onSubmit }: AnalyticsDashboardProps) {
     return (
         <div>
-            <form onSubmit={onSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'end', marginBottom: 20 }}>
+            <form onSubmit={onSubmit} className="flex flex-wrap gap-3 items-end mb-5">
                 <label htmlFor="analytics-job">Job
                     <select id="analytics-job" value={jobId} onChange={(event) => onJobIdChange(event.target.value)}>
                         <option value="">All jobs</option>

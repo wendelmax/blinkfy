@@ -83,27 +83,27 @@ export function JobForm({ clientId, createJob, onCreated }: JobFormProps) {
     }
 
     return (
-        <form onSubmit={onSubmit} noValidate style={{ display: 'grid', gap: 14, maxWidth: 720 }}>
+        <form onSubmit={onSubmit} noValidate className="grid gap-3.5 max-w-[720px]">
             <div>
                 <label htmlFor="job-title">Job title</label>
-                <input id="job-title" value={title} onChange={(event) => setTitle(event.target.value)} required style={{ display: 'block', width: '100%' }} />
+                <input id="job-title" value={title} onChange={(event) => setTitle(event.target.value)} required className="block w-full" />
             </div>
             <div>
                 <label htmlFor="job-description">Description</label>
-                <textarea id="job-description" value={description} onChange={(event) => setDescription(event.target.value)} rows={4} style={{ display: 'block', width: '100%' }} />
+                <textarea id="job-description" value={description} onChange={(event) => setDescription(event.target.value)} rows={4} className="block w-full" />
             </div>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className="flex gap-3">
                 <label>Location<input value={location} onChange={(event) => setLocation(event.target.value)} /></label>
                 <label>Work model<input value={workModel} onChange={(event) => setWorkModel(event.target.value)} /></label>
             </div>
             <div>
                 <label htmlFor="job-requirements">Requirements (one per line)</label>
-                <textarea id="job-requirements" value={requirementsText} onChange={(event) => setRequirementsText(event.target.value)} rows={5} style={{ display: 'block', width: '100%' }} />
+                <textarea id="job-requirements" value={requirementsText} onChange={(event) => setRequirementsText(event.target.value)} rows={5} className="block w-full" />
             </div>
             <fieldset>
                 <legend>Scorecard weights</legend>
                 {labels.map(([key, label]) => (
-                    <label key={key} style={{ display: 'block' }}>
+                    <label key={key} className="block">
                         {label}
                         <input
                             aria-label={`${label} weight`}

@@ -37,7 +37,7 @@ export function ConciergeQueue({ jobId, applications }: Props) {
     const visible = items.filter((item) => filter === 'all' || item.status === 'draft');
     const pending = items.filter((item) => item.status === 'draft').length;
 
-    return <section aria-labelledby="concierge-queue-heading" style={{ margin: '20px 0', padding: 16, border: '1px solid #d8dee9', borderRadius: 10 }}>
+    return <section aria-labelledby="concierge-queue-heading" className="my-5 p-4 border border-border-strong rounded-[10px]">
         <h2 id="concierge-queue-heading">Concierge communication queue</h2>
         <p>{pending} draft(s) awaiting human review. Nothing is sent automatically.</p>
         <label htmlFor="concierge-filter">View</label>{' '}
@@ -45,7 +45,7 @@ export function ConciergeQueue({ jobId, applications }: Props) {
         {state === 'loading' && <p>Loading communication drafts…</p>}
         {state === 'error' && <p role="alert">{error}</p>}
         {state === 'ready' && visible.length === 0 && <p>No communication drafts match this view.</p>}
-        {visible.map((item) => <article key={item.id} style={{ marginTop: 12, padding: 12, background: '#f5f7fa', borderRadius: 8 }}>
+        {visible.map((item) => <article key={item.id} className="mt-3 p-3 bg-surface-alt rounded-lg">
             <p><strong>{item.candidateName ?? 'Candidate'}</strong> · {item.channel} · {item.status}</p>
             <p>{item.content}</p>
             {item.status === 'draft' && <><button type="button" onClick={() => void decide(item, 'approved')}>Approve for sending</button>{' '}<button type="button" onClick={() => void decide(item, 'rejected')}>Reject draft</button></>}
