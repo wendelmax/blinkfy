@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const candidateRoutes = require('./routes/candidate');
 const paymentRoutes = require('./routes/payment');
+const paymentEscrowRoutes = require('./routes/paymentEscrow');
 const { createBlinkfyRouter } = require('./routes/blinkfy');
 const { createConciergeWebhookRouter } = require('./routes/conciergeWebhook');
 const { createScreeningProviderWebhookRouter } = require('./routes/screeningProviderWebhook');
@@ -41,6 +42,7 @@ function createApp({ prisma = getPrisma() } = {}) {
     app.use('/api/dashboard', dashboardRoutes);
     app.use('/api/candidate', candidateRoutes);
     app.use('/api/payment', paymentRoutes);
+    app.use('/api/payment', paymentEscrowRoutes);
     app.use('/api/job', require('./routes/job'));
     app.use('/api/metadata', require('./routes/metadata'));
     app.use('/api/company', require('./routes/company'));

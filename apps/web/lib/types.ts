@@ -149,3 +149,40 @@ export interface CandidateImportResult {
     duplicates: Array<{ id: string; row: number }>;
     invalidRows: Array<{ row: number; field: string; message: string }>;
 }
+
+export interface EscrowHold {
+    id: string;
+    amountUsd: number;
+    currency: string;
+    holdReason: string;
+    releaseAt: string;
+    daysRemaining: number;
+}
+
+export interface EscrowSummary {
+    totalHeldUsd: number;
+    holdCount: number;
+    nextReleaseDate: string | null;
+    nextReleaseAmount: number;
+    holds: EscrowHold[];
+}
+
+export interface Invoice {
+    id: string;
+    invoiceNumber: string;
+    amountUsd: number;
+    amountBrl: number | null;
+    status: string;
+    issuedAt: string | null;
+    paidAt: string | null;
+    createdAt: string;
+}
+
+export interface InvoiceSummary {
+    totalIssued: number;
+    totalPaid: number;
+    totalPending: number;
+    invoiceCount: number;
+    cnaeCode: string;
+    recentInvoices: Invoice[];
+}

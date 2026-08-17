@@ -32,6 +32,7 @@ model User {
   talentCandidate      Candidate? @relation("CandidateTalentAccount")
   marketplacePlacements MarketplacePlacement[] @relation("MarketplacePlacementRecruiter")
   revenueAllocations   PlacementRevenueAllocation[] @relation("PlacementRevenueAllocationRecruiter")
+  invoices             Invoice[]
 }
 
 enum UserType {
@@ -149,6 +150,9 @@ model Placement {
   retentionReleaseDate DateTime?
   createdAt            DateTime  @default(now())
   recruiter            User?     @relation(fields: [recruiterId], references: [id])
+  escrowHolds          EscrowHold[]
+  invoices             Invoice[]
+  platformFees         PlatformFee[]
 }
 
 model WalletTransaction {
@@ -163,6 +167,60 @@ model WalletTransaction {
   referenceId  String? // external payment id
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EscrowHold {
+  id          String   @id @default(cuid())
+  placementId String
+  amountUsd   Float
+  currency    String   @default("USD")
+  status      String   @default("held") // held | released | forfeited
+  holdReason  String   @default("success_fee") // success_fee | retention_bonus
+  heldAt      DateTime @default(now())
+  releaseAt   DateTime // scheduled release date
+  releasedAt  DateTime?
+  createdAt   DateTime @default(now())
+  placement   Placement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+
+  @@index([placementId, status])
+  @@index([status, releaseAt])
+  @@map("escrow_holds")
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  userId          String
+  placementId     String?
+  invoiceNumber   String   @unique
+  amountUsd       Float
+  amountBrl       Float?
+  exchangeRate    Float?
+  taxResidence    String?
+  cnaeCode        String?
+  status          String   @default("draft") // draft | issued | paid | void
+  issuedAt        DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  placement       Placement? @relation(fields: [placementId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([placementId])
+  @@map("invoices")
+}
+
+model PlatformFee {
+  id          String   @id @default(cuid())
+  placementId String
+  feeType     String   // success_fee | retention_mgmt | latam_tax_bridge
+  amountUsd   Float
+  basisPoints Int      // e.g. 2000 = 20%
+  status      String   @default("pending") // pending | deducted
+  createdAt   DateTime @default(now())
+  placement   Placement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+
+  @@index([placementId, feeType])
+  @@map("platform_fees")
 }
 
 model ExchangeRateLog {

@@ -91,6 +91,9 @@ export default function HirePage() {
                 <Link href="/hire/analytics" className="px-4 py-2 rounded-lg border border-border bg-surface text-sm font-medium hover:bg-surface-alt transition-colors">
                     Pipeline analytics
                 </Link>
+                <Link href="/hire/payments" className="px-4 py-2 rounded-lg border border-border bg-surface text-sm font-medium hover:bg-surface-alt transition-colors">
+                    Payments & Escrow
+                </Link>
             </nav>
 
             <section aria-labelledby="jobs-heading" className="bg-surface border border-border rounded-lg p-4">
