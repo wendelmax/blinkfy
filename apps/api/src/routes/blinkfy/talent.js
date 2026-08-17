@@ -1,9 +1,9 @@
 const express = require('express');
 const { createTalentController } = require('../../controllers/blinkfy/talentController');
 
-function createTalentRouter({ requireWorkspaceRole, prisma }) {
+function createTalentRouter({ requireWorkspaceRole, prisma, billingProvider }) {
     const router = express.Router();
-    const controller = createTalentController({ prisma });
+    const controller = createTalentController({ prisma, billingProvider });
     const candidateAccess = [requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), async (req, res, next) => {
         const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { userType: true } });
         if (!user || user.userType !== 'candidate') return res.status(403).json({ message: 'Candidate access required' });

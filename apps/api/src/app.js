@@ -16,10 +16,25 @@ const paymentEscrowRoutes = require('./routes/paymentEscrow');
 const { createBlinkfyRouter } = require('./routes/blinkfy');
 const { createConciergeWebhookRouter } = require('./routes/conciergeWebhook');
 const { createScreeningProviderWebhookRouter } = require('./routes/screeningProviderWebhook');
+const { createStripeWebhookRouter } = require('./routes/stripeWebhook');
+const { createStripeAdapter } = require('./services/blinkfy/stripeBillingAdapter');
+const { createBillingProviderRegistry } = require('./services/blinkfy/billingProviderAdapter');
 
 function createApp({ prisma = getPrisma() } = {}) {
     const app = express();
     const isProd = process.env.NODE_ENV === 'production';
+
+    let billingProvider = null;
+    if (process.env.STRIPE_SECRET_KEY) {
+        try {
+            const registry = createBillingProviderRegistry();
+            const stripeAdapter = createStripeAdapter();
+            registry.register({ provider: 'stripe', adapter: stripeAdapter });
+            billingProvider = stripeAdapter;
+        } catch (error) {
+            logger.warn('app.stripe_init_failed', { error: error.message });
+        }
+    }
 
     app.use(requestContext);
 
@@ -29,6 +44,10 @@ function createApp({ prisma = getPrisma() } = {}) {
         origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || true,
         credentials: true,
     }));
+    if (billingProvider) {
+        app.use('/api/webhooks/stripe', express.raw({ type: 'application/json', limit: '1mb' }), createStripeWebhookRouter({ prisma, billingProvider }));
+    }
+
     app.use(express.json({ limit: '1mb' }));
 
     app.use(rateLimit({
@@ -46,7 +65,7 @@ function createApp({ prisma = getPrisma() } = {}) {
     app.use('/api/job', require('./routes/job'));
     app.use('/api/metadata', require('./routes/metadata'));
     app.use('/api/company', require('./routes/company'));
-    app.use('/api/blinkfy', createBlinkfyRouter({ prisma }));
+    app.use('/api/blinkfy', createBlinkfyRouter({ prisma, billingProvider }));
     app.use('/api/webhooks/concierge', createConciergeWebhookRouter({ prisma }));
     app.use('/api/webhooks/screening', createScreeningProviderWebhookRouter({ prisma }));
 

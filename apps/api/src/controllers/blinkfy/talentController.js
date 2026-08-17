@@ -15,8 +15,9 @@ const { usageFeatureForDraft, periodKey } = require('../../services/blinkfy/tale
 const { transitionCandidateDraft } = require('../../services/blinkfy/talentDraftReviewService');
 const { buildTalentPlanCatalog } = require('../../services/blinkfy/talentPlanCatalogService');
 const { buildUpgradeIntent } = require('../../services/blinkfy/talentUpgradeService');
+const { createCheckoutSession } = require('../../services/blinkfy/checkoutSessionService');
 
-function createTalentController({ prisma }) {
+function createTalentController({ prisma, billingProvider }) {
     async function resolveCandidate(req) {
         return prisma.candidate.findFirst({
             where: { workspaceId: req.workspace.id, userId: req.user.id },
@@ -71,11 +72,27 @@ function createTalentController({ prisma }) {
     }
 
     async function requestUpgrade(req, res) {
-        const candidate = await prisma.candidate.findFirst({ where: { workspaceId: req.workspace.id, userId: req.user.id }, include: { subscription: true } });
+        const candidate = await prisma.candidate.findFirst({ where: { workspaceId: req.workspace.id, userId: req.user.id }, include: { subscription: true, user: { select: { email: true } } } });
         if (!candidate) return res.status(404).json({ message: 'Candidate profile not found' });
         let intent;
         try { intent = buildUpgradeIntent({ currentPlan: candidate.subscription?.plan }); }
         catch (error) { return res.status(422).json({ message: error.message }); }
+
+        if (billingProvider) {
+            try {
+                const checkoutSession = await createCheckoutSession({
+                    billingProvider,
+                    prisma,
+                    candidateId: candidate.id,
+                    email: candidate.user?.email,
+                });
+                await recordAuditEvent({ prisma, workspaceId: req.workspace.id, actorUserId: req.user.id, entityType: 'candidate_upgrade_intent', entityId: `${candidate.id}:pro`, action: 'candidate.pro_upgrade_requested', metadata: { requestedPlan: intent.requestedPlan, checkoutSessionId: checkoutSession.sessionId } });
+                return res.status(202).json({ intent: { ...intent, checkoutUrl: checkoutSession.url, sessionId: checkoutSession.sessionId } });
+            } catch (error) {
+                return res.status(422).json({ message: error.message });
+            }
+        }
+
         const audit = await recordAuditEvent({ prisma, workspaceId: req.workspace.id, actorUserId: req.user.id, entityType: 'candidate_upgrade_intent', entityId: `${candidate.id}:pro`, action: 'candidate.pro_upgrade_requested', metadata: { requestedPlan: intent.requestedPlan } });
         return res.status(202).json({ intent: { id: audit.id, ...intent } });
     }
