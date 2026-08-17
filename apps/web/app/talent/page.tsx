@@ -11,6 +11,7 @@ import { VisibilityControl } from '../../components/talent/VisibilityControl';
 import { ScreeningInvitations } from '../../components/talent/ScreeningInvitations';
 import { SubscriptionStatus } from '../../components/talent/SubscriptionStatus';
 import { NfeDashboard } from '../../components/talent/NfeDashboard';
+import { ProofOfIncomePanel } from '../../components/talent/ProofOfIncomePanel';
 
 export default function TalentPage() {
     const [profile, setProfile] = useState<CandidateTalentProfile | null>(null);
@@ -74,6 +75,7 @@ export default function TalentPage() {
                     <ConsentCenter initialItems={consents} />
                     <CandidateGrowthPanel analytics={analytics} />
                     <NfeDashboard />
+                    <ProofOfIncomePanel />
                     <ScreeningInvitations />
                 </div>
             )}
