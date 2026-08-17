@@ -5,6 +5,7 @@
 # Dependency trees and local build/test artifacts are recreated in image stages.
 node_modules
 **/node_modules
+node_modules/@recruitment-platform
 .next
 **/.next
 dist
