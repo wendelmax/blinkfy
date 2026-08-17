@@ -10,6 +10,7 @@ import { TalentProfileForm } from '../../components/talent/TalentProfileForm';
 import { VisibilityControl } from '../../components/talent/VisibilityControl';
 import { ScreeningInvitations } from '../../components/talent/ScreeningInvitations';
 import { SubscriptionStatus } from '../../components/talent/SubscriptionStatus';
+import { NfeDashboard } from '../../components/talent/NfeDashboard';
 
 export default function TalentPage() {
     const [profile, setProfile] = useState<CandidateTalentProfile | null>(null);
@@ -72,6 +73,7 @@ export default function TalentPage() {
                     <SubscriptionStatus />
                     <ConsentCenter initialItems={consents} />
                     <CandidateGrowthPanel analytics={analytics} />
+                    <NfeDashboard />
                     <ScreeningInvitations />
                 </div>
             )}
