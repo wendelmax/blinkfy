@@ -186,3 +186,27 @@ export interface InvoiceSummary {
     cnaeCode: string;
     recentInvoices: Invoice[];
 }
+
+export interface BillingSubscription {
+    plan: 'free' | 'pro';
+    status: string;
+    provider: string | null;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+}
+
+export interface CheckoutSessionResponse {
+    url: string;
+    sessionId: string;
+    expiresAt: string | null;
+}
+
+export interface CheckoutStatusResponse {
+    sessionId: string;
+    status: string;
+    candidateId: string;
+    email: string | null;
+    subscription: { plan: string; status: string } | null;
+    paymentStatus: string | null;
+    subscriptionId: string | null;
+}

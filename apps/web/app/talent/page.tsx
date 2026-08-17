@@ -9,6 +9,7 @@ import { CandidateGrowthPanel } from '../../components/talent/CandidateGrowthPan
 import { TalentProfileForm } from '../../components/talent/TalentProfileForm';
 import { VisibilityControl } from '../../components/talent/VisibilityControl';
 import { ScreeningInvitations } from '../../components/talent/ScreeningInvitations';
+import { SubscriptionStatus } from '../../components/talent/SubscriptionStatus';
 
 export default function TalentPage() {
     const [profile, setProfile] = useState<CandidateTalentProfile | null>(null);
@@ -68,6 +69,7 @@ export default function TalentPage() {
                 <div className="space-y-6">
                     <TalentProfileForm profile={profile} onSaved={setProfile} />
                     <VisibilityControl visibility={profile.visibility} onChange={changeVisibility} />
+                    <SubscriptionStatus />
                     <ConsentCenter initialItems={consents} />
                     <CandidateGrowthPanel analytics={analytics} />
                     <ScreeningInvitations />

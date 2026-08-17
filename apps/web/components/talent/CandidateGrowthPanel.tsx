@@ -61,7 +61,11 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
     async function requestUpgrade() {
         setError('');
         try {
-            const result = await apiFetch<{ intent: { status: string; charged: boolean; subscriptionChanged: boolean } }>('/api/blinkfy/talent/plans/upgrade-intent', { method: 'POST' });
+            const result = await apiFetch<{ intent: { status: string; charged: boolean; subscriptionChanged: boolean; checkoutUrl?: string; sessionId?: string } }>('/api/blinkfy/talent/plans/upgrade-intent', { method: 'POST' });
+            if (result.intent.checkoutUrl) {
+                window.location.href = result.intent.checkoutUrl;
+                return;
+            }
             setUpgradeIntent(result.intent);
         } catch (caught) { setError(caught instanceof ApiError ? caught.message : 'Upgrade request could not be created.'); }
     }
@@ -152,9 +156,8 @@ export function CandidateGrowthPanel({ analytics }: { analytics: TalentPositioni
 
         <section aria-labelledby="talent-plans-heading" className="mt-4">
             <h3 id="talent-plans-heading">Plans</h3>
-            <small>Checkout is not charged here; a human-approved billing flow is required.</small>
             <button type="button" onClick={() => void loadPlans()}>Compare Free and Pro</button>
-            {plans && <div role="status"><p>Current plan: {plans.currentPlan} · {plans.status}</p><ul>{plans.plans.map((plan) => <li key={plan.id}>{plan.id}: {plan.limits['content.draft']} content drafts and {plan.limits['comment.draft']} comment drafts per period</li>)}</ul>{plans.currentPlan === 'free' && <button type="button" onClick={() => void requestUpgrade()}>Request Pro upgrade</button>}</div>}
+            {plans && <div role="status"><p>Current plan: {plans.currentPlan} · {plans.status}</p><ul>{plans.plans.map((plan) => <li key={plan.id}>{plan.id}: {plan.limits['content.draft']} content drafts and {plan.limits['comment.draft']} comment drafts per period</li>)}</ul>{plans.currentPlan === 'free' && <button type="button" onClick={() => void requestUpgrade()}>Upgrade to Pro</button>}</div>}
             {upgradeIntent && <p role="status">Upgrade request: {upgradeIntent.status} · charged: {String(upgradeIntent.charged)} · subscription changed: {String(upgradeIntent.subscriptionChanged)}</p>}
         </section>
 
