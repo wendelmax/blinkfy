@@ -233,4 +233,37 @@ export interface NfeSummary {
     totalAmountUsd: number;
     recentEmissions: NfeEmission[];
 }
+
+export interface TaxDocument {
+    id: string;
+    userId: string;
+    documentType: string;
+    formType: string;
+    status: string;
+    fullName: string;
+    countryOfBirth: string | null;
+    permanentAddress: string | null;
+    mailingAddress: string | null;
+    taxId: string | null;
+    dateOfBirth: string | null;
+    isForeignIndividual: boolean;
+    claimTreatyBenefits: boolean;
+    treatyCountry: string | null;
+    treatyArticle: string | null;
+    documentUri: string | null;
+    signatureDate: string | null;
+    expiryDate: string | null;
+    renewalAlertSent: boolean;
+    supersededById: string | null;
+    metadata: Record<string, unknown> | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface TaxDocumentSummary {
+    total: number;
+    active: number;
+    expired: number;
+    expiringSoon: number;
+    byFormType: Record<string, number>;
 }

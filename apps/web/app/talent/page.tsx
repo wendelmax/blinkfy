@@ -12,6 +12,7 @@ import { ScreeningInvitations } from '../../components/talent/ScreeningInvitatio
 import { SubscriptionStatus } from '../../components/talent/SubscriptionStatus';
 import { NfeDashboard } from '../../components/talent/NfeDashboard';
 import { ProofOfIncomePanel } from '../../components/talent/ProofOfIncomePanel';
+import { TaxDocumentPanel } from '../../components/talent/TaxDocumentPanel';
 
 export default function TalentPage() {
     const [profile, setProfile] = useState<CandidateTalentProfile | null>(null);
@@ -76,6 +77,7 @@ export default function TalentPage() {
                     <CandidateGrowthPanel analytics={analytics} />
                     <NfeDashboard />
                     <ProofOfIncomePanel />
+                    <TaxDocumentPanel />
                     <ScreeningInvitations />
                 </div>
             )}

@@ -14,6 +14,7 @@ const { createRevenueSharingRouter } = require('./revenueSharing');
 const { createBillingRouter } = require('../billing');
 const { createNfeRouter } = require('../nfe');
 const { createProofOfIncomeRouter } = require('../proofOfIncome');
+const { createTaxDocumentRouter } = require('../taxDocument');
 const { createKnowledgeController } = require('../../controllers/blinkfy/knowledgeController');
 
 function createBlinkfyRouter({ prisma, billingProvider }) {
@@ -36,6 +37,7 @@ function createBlinkfyRouter({ prisma, billingProvider }) {
     }
     router.use('/nfe', createNfeRouter({ ...workspaceMiddleware, prisma }));
     router.use('/candidate', createProofOfIncomeRouter({ ...workspaceMiddleware, prisma }));
+    router.use('/candidate/tax-documents', createTaxDocumentRouter({ ...workspaceMiddleware, prisma }));
     const knowledge = createKnowledgeController({ prisma });
     router.get('/clients/:clientId/knowledge', workspaceMiddleware.requireWorkspaceRole('owner', 'admin', 'recruiter', 'viewer'), workspaceMiddleware.requireClientAccess, knowledge.listDocuments);
     router.post('/clients/:clientId/knowledge', workspaceMiddleware.requireWorkspaceRole('owner', 'admin', 'recruiter'), workspaceMiddleware.requireClientAccess, knowledge.createDocument);
