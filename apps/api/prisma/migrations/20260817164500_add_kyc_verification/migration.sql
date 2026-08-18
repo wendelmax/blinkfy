@@ -37,4 +37,4 @@ CREATE INDEX "kyc_verifications_userId_verificationType_idx" ON "kyc_verificatio
 CREATE INDEX "kyc_verifications_providerSessionId_idx" ON "kyc_verifications"("providerSessionId");
 
 -- AddForeignKey
-ALTER TABLE "kyc_verifications" ADD CONSTRAINT "kyc_verifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "kyc_verifications" ADD CONSTRAINT "kyc_verifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
