@@ -34,6 +34,7 @@ model User {
   revenueAllocations   PlacementRevenueAllocation[] @relation("PlacementRevenueAllocationRecruiter")
   invoices             Invoice[]
   nfeEmissions         NfeEmission[]
+  taxDocuments         TaxDocument[]
 }
 
 enum UserType {
@@ -259,6 +260,38 @@ model NfeEmission {
   @@index([invoiceId])
   @@index([providerNfeId])
   @@map("nfe_emissions")
+}
+
+model TaxDocument {
+  id              String   @id @default(cuid())
+  userId          String
+  documentType    String   // w8ben | w9 | other
+  formType        String   @default("w8ben")
+  status          String   @default("active") // active | expired | superseded | pending_review
+  fullName        String
+  countryOfBirth  String?
+  permanentAddress String?
+  mailingAddress  String?
+  taxId           String?  // SSN or ITIN for W-8BEN, EIN for W-9
+  dateOfBirth     DateTime?
+  isForeignIndividual Boolean @default(true)
+  claimTreatyBenefits Boolean @default(false)
+  treatyCountry   String?
+  treatyArticle   String?
+  documentUri     String?  // S3/CDN URI for uploaded signed form
+  signatureDate   DateTime?
+  expiryDate      DateTime? // W-8BEN expires after 3 years
+  renewalAlertSent Boolean @default(false)
+  supersededById  String?
+  metadata        Json?    // Additional form fields
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, formType])
+  @@index([expiryDate])
+  @@map("tax_documents")
 }
 
 model ExchangeRateLog {
