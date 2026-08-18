@@ -266,6 +266,8 @@ export interface TaxDocumentSummary {
     expired: number;
     expiringSoon: number;
     byFormType: Record<string, number>;
+}
+
 export interface KycVerification {
     id: string;
     verificationType: string;
