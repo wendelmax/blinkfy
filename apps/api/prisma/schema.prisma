@@ -35,6 +35,7 @@ model User {
   invoices             Invoice[]
   nfeEmissions         NfeEmission[]
   taxDocuments         TaxDocument[]
+  kycVerifications     KycVerification[]
 }
 
 enum UserType {
@@ -292,6 +293,36 @@ model TaxDocument {
   @@index([userId, formType])
   @@index([expiryDate])
   @@map("tax_documents")
+model KycVerification {
+  id                String   @id @default(cuid())
+  userId            String
+  verificationType  String   @default("liveness") // liveness | document | full
+  status            String   @default("pending") // pending | processing | approved | rejected | expired
+  provider          String   @default("mock") // mock | aws_rekognition | azure_face
+  providerSessionId String?  // External provider session reference
+  faceEmbeddingHash String?  // SHA-256 hash of biometric embedding (never store raw)
+  livenessScore     Float?   // 0-1 confidence score from provider
+  matchScore        Float?   // Face match confidence (selfie vs ID)
+  rejectionReason   String?
+  documentType      String?  // passport | drivers_license | national_id
+  documentNumber    String?  // Hashed/encrypted document number
+  documentUri       String?  // S3/CDN URI for uploaded document
+  selfieUri         String?  // S3/CDN URI for selfie capture
+  consentGiven      Boolean  @default(false)
+  consentIp         String?
+  consentTimestamp  DateTime?
+  verifiedAt        DateTime?
+  expiresAt         DateTime? // KYC validity period
+  triggerReason     String?  // onboarding | withdrawal | manual
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, verificationType])
+  @@index([providerSessionId])
+  @@map("kyc_verifications")
 }
 
 model ExchangeRateLog {

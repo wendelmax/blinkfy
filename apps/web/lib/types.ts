@@ -266,4 +266,28 @@ export interface TaxDocumentSummary {
     expired: number;
     expiringSoon: number;
     byFormType: Record<string, number>;
+export interface KycVerification {
+    id: string;
+    verificationType: string;
+    status: string;
+    provider: string;
+    livenessScore: number | null;
+    matchScore: number | null;
+    rejectionReason: string | null;
+    verifiedAt: string | null;
+    expiresAt: string | null;
+    triggerReason: string | null;
+    createdAt: string;
+}
+
+export interface KycStatus {
+    verified: boolean;
+    verification: {
+        id: string;
+        status: string;
+        verifiedAt: string;
+        expiresAt: string | null;
+        verificationType: string;
+    } | null;
+    isExpired: boolean;
 }

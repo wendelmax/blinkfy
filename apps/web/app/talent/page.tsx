@@ -13,6 +13,7 @@ import { SubscriptionStatus } from '../../components/talent/SubscriptionStatus';
 import { NfeDashboard } from '../../components/talent/NfeDashboard';
 import { ProofOfIncomePanel } from '../../components/talent/ProofOfIncomePanel';
 import { TaxDocumentPanel } from '../../components/talent/TaxDocumentPanel';
+import { KycVerificationPanel } from '../../components/talent/KycVerificationPanel';
 
 export default function TalentPage() {
     const [profile, setProfile] = useState<CandidateTalentProfile | null>(null);
@@ -78,6 +79,7 @@ export default function TalentPage() {
                     <NfeDashboard />
                     <ProofOfIncomePanel />
                     <TaxDocumentPanel />
+                    <KycVerificationPanel />
                     <ScreeningInvitations />
                 </div>
             )}
