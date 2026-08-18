@@ -37,4 +37,4 @@ CREATE INDEX "tax_documents_userId_formType_idx" ON "tax_documents"("userId", "f
 CREATE INDEX "tax_documents_expiryDate_idx" ON "tax_documents"("expiryDate");
 
 -- AddForeignKey
-ALTER TABLE "tax_documents" ADD CONSTRAINT "tax_documents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "tax_documents" ADD CONSTRAINT "tax_documents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
