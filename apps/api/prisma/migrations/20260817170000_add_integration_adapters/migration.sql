@@ -62,10 +62,10 @@ CREATE INDEX "integration_executions_configId_status_idx" ON "integration_execut
 CREATE INDEX "integration_executions_userId_action_idx" ON "integration_executions"("userId", "action");
 
 -- AddForeignKey
-ALTER TABLE "integration_configs" ADD CONSTRAINT "integration_configs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "integration_configs" ADD CONSTRAINT "integration_configs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "integration_executions" ADD CONSTRAINT "integration_executions_configId_fkey" FOREIGN KEY ("configId") REFERENCES "integration_configs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "integration_executions" ADD CONSTRAINT "integration_executions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "integration_executions" ADD CONSTRAINT "integration_executions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
