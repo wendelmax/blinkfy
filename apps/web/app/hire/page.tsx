@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { apiFetch, ApiError, getActiveClientId, getActiveWorkspaceId, setAccessToken, setActiveClientId, setActiveWorkspaceId } from '../../lib/api';
 import type { BlinkfyJob } from '../../lib/types';
+import { IntegrationManager } from '../../components/hire/IntegrationManager';
 
 function statusCopy(error: ApiError) {
     if (error.status === 401) return 'Your session has ended. Sign in again to continue.';
@@ -95,6 +96,8 @@ export default function HirePage() {
                     Payments & Escrow
                 </Link>
             </nav>
+
+            <IntegrationManager />
 
             <section aria-labelledby="jobs-heading" className="bg-surface border border-border rounded-lg p-4">
                 <h2 id="jobs-heading" className="text-base font-semibold mb-3">Jobs</h2>

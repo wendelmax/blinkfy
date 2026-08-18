@@ -293,3 +293,43 @@ export interface KycStatus {
     } | null;
     isExpired: boolean;
 }
+
+export interface IntegrationConfig {
+    id: string;
+    userId: string;
+    workspaceId: string;
+    provider: string;
+    category: string;
+    status: string;
+    killSwitch: boolean;
+    rateLimitRpm: number;
+    lastSyncAt: string | null;
+    lastError: string | null;
+    errorCount: number;
+    createdAt: string;
+}
+
+export interface IntegrationExecution {
+    id: string;
+    configId: string;
+    userId: string;
+    workspaceId: string;
+    action: string;
+    status: string;
+    idempotencyKey: string;
+    requestPayload: Record<string, unknown> | null;
+    responsePayload: Record<string, unknown> | null;
+    approvalRequired: boolean;
+    approvedBy: string | null;
+    approvedAt: string | null;
+    executedAt: string | null;
+    completedAt: string | null;
+    error: string | null;
+    retryCount: number;
+    createdAt: string;
+}
+
+export interface SupportedProvider {
+    provider: string;
+    category: string;
+}

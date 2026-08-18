@@ -36,6 +36,8 @@ model User {
   nfeEmissions         NfeEmission[]
   taxDocuments         TaxDocument[]
   kycVerifications     KycVerification[]
+  integrations         IntegrationConfig[]
+  integrationExecutions IntegrationExecution[]
 }
 
 enum UserType {
@@ -325,6 +327,61 @@ model KycVerification {
   @@index([userId, verificationType])
   @@index([providerSessionId])
   @@map("kyc_verifications")
+}
+
+model IntegrationConfig {
+  id              String   @id @default(cuid())
+  userId          String
+  workspaceId     String
+  provider        String   // google_calendar | slack | hubspot | greenhouse | lever | mcp
+  category        String   // calendar | ats | crm | mcp
+  status          String   @default("inactive") // active | inactive | error | rate_limited
+  credentialRef   String?  // Reference to encrypted credential store (never raw secrets)
+  config          Json?    // Provider-specific non-secret configuration
+  killSwitch      Boolean  @default(true) // Safety: external calls disabled by default
+  rateLimitRpm    Int      @default(60) // Requests per minute limit
+  lastSyncAt      DateTime?
+  lastError       String?
+  errorCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  executions      IntegrationExecution[]
+
+  @@index([userId, provider])
+  @@index([workspaceId, category])
+  @@map("integration_configs")
+}
+
+model IntegrationExecution {
+  id                String   @id @default(cuid())
+  configId          String
+  userId            String
+  workspaceId       String
+  action            String   // send_calendar_invite | export_candidate | execute_mcp_tool | send_webhook
+  status            String   @default("pending_approval") // pending_approval | approved | executing | completed | failed | cancelled
+  idempotencyKey    String   @unique
+  requestPayload    Json?
+  responsePayload   Json?
+  approvalRequired  Boolean  @default(true)
+  approvedBy        String?
+  approvedAt        DateTime?
+  executedAt        DateTime?
+  completedAt       DateTime?
+  failedAt          DateTime?
+  error             String?
+  retryCount        Int      @default(0)
+  maxRetries        Int      @default(3)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  config            IntegrationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([configId, status])
+  @@index([userId, action])
+  @@index([idempotencyKey])
+  @@map("integration_executions")
 }
 
 model ExchangeRateLog {
