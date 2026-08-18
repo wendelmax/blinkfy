@@ -293,6 +293,8 @@ model TaxDocument {
   @@index([userId, formType])
   @@index([expiryDate])
   @@map("tax_documents")
+}
+
 model KycVerification {
   id                String   @id @default(cuid())
   userId            String
